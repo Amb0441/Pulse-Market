@@ -11,6 +11,9 @@ coverage/
 .vite/
 .cache/
 
+# Turbo
+.turbo/
+
 # Secrets. `.env*` matches at any depth, so this covers backend/.env too.
 # The negation re-admits the committed templates.
 .env*

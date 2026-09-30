@@ -7,19 +7,23 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "bun run --cwd apps/web dev",
-    "dev:web": "bun run --cwd apps/web dev:web",
-    "build": "bun install && bun run --cwd apps/web build",
-    "preview": "bun run --cwd apps/web preview",
-    "lint": "bun run --cwd apps/web lint",
-    "typecheck": "bun run --cwd apps/web typecheck && bun run --cwd apps/api typecheck",
-    "scan:secrets": "bun run --cwd apps/web scan:secrets",
-    "test": "bun run --cwd apps/web test && bun run --cwd apps/api test",
-    "build:api": "bun run --cwd apps/api build",
-    "test:api": "bun run --cwd apps/api test",
-    "typecheck:api": "bun run --cwd apps/api typecheck"
+    "dev": "turbo run dev",
+    "dev:web": "turbo run dev:web",
+    "build": "turbo run build",
+    "build:api": "turbo run build:api",
+    "preview": "turbo run preview",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "typecheck:api": "turbo run typecheck:api",
+    "scan:secrets": "turbo run scan:secrets",
+    "test": "turbo run test",
+    "test:api": "turbo run test:api",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\""
   },
   "devDependencies": {
-    "typescript": "^7.0.2"
-  }
+    "turbo": "^2.0.0",
+    "typescript": "^7.0.2",
+    "prettier": "^3.3.0"
+  },
+  "packageManager": "bun@1.2.15"
 }

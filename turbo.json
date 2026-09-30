@@ -1,0 +1,28 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "build/**"]
+    },
+    "build:api": {
+      "outputs": ["dist/**"]
+    },
+    "typecheck": {
+      "dependsOn": []
+    },
+    "typecheck:api": {},
+    "lint": {},
+    "test": {
+      "dependsOn": [],
+      "outputs": ["coverage/**"]
+    },
+    "test:api": {},
+    "scan:secrets": {},
+    "dev": {
+      "cache": false,
+      "persistent": true
+    }
+  },
+  "globalEnv": ["NODE_ENV", "FRONTEND_URL", "SUPABASE_URL"]
+}
