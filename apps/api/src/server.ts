@@ -1221,3 +1221,11 @@ if (import.meta.main) {
 }
 
 export { app };
+
+/** Factory for Cloudflare Pages Functions - returns configured app without listening */
+export function createApp() {
+  // Realtime subscription is handled differently in serverless
+  // The Functions environment doesn't support long-lived WebSocket/SSE connections
+  // For now, we skip startRealtime() - the client will fall back to polling
+  return app;
+}

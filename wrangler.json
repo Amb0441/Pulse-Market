@@ -1,0 +1,14 @@
+{
+  "$schema": "https://developers.cloudflare.com/schemas/wrangler.json",
+  "name": "pulse-market",
+  "compatibility_date": "2026-09-30",
+  "compatibility_flags": ["nodejs_compat"],
+  "pages_build_output_dir": "apps/web/dist",
+  "main": "functions/api/[[path]].ts",
+  "rules": [
+    {
+      "type": "modules",
+      "globs": ["**/*.ts"]
+    }
+  ]
+}
