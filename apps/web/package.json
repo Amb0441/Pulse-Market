@@ -4,14 +4,14 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "bun run scripts/dev.ts",
+    "dev": "node scripts/dev.ts",
     "dev:web": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
-    "scan:secrets": "bun scripts/scan-secrets.ts",
-    "test": "bun run typecheck && bun run build && bun run scan:secrets"
+    "scan:secrets": "node scripts/scan-secrets.ts",
+    "test": "npm run typecheck && npm run build && npm run scan:secrets"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

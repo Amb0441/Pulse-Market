@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "bun --watch src/server.ts",
-    "build": "bun build src/server.ts --outdir dist --target node",
-    "start": "bun run dist/server.js",
+    "dev": "node --watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
-    "test": "bun test",
-    "audit": "bun audit"
+    "test": "node --test",
+    "audit": "npm audit"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
@@ -26,7 +26,6 @@
     "@types/express": "^4.17.21",
     "@types/multer": "^1.4.12",
     "@types/node": "^22.14.0",
-    "bun-types": "^1.4.2",
     "tsx": "^4.21.0",
     "typescript": "^7.0.2"
   }

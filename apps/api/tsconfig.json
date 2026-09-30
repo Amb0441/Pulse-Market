@@ -14,7 +14,7 @@
     "declaration": false,
     "sourceMap": true,
     "noUncheckedIndexedAccess": false,
-    "types": ["node", "bun-types"],
+    "types": ["node"],
     "paths": {
       "@/*": ["./src/*"]
     }

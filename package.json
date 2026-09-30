@@ -18,12 +18,13 @@
     "scan:secrets": "turbo run scan:secrets",
     "test": "turbo run test",
     "test:api": "turbo run test:api",
-    "format": "prettier --write \"**/*.{ts,tsx,json,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "build:npm": "npm ci --workspaces --if-present && npm run build --workspaces --if-present"
   },
   "devDependencies": {
     "turbo": "^2.0.0",
     "typescript": "^7.0.2",
     "prettier": "^3.3.0"
   },
-  "packageManager": "bun@1.2.15"
+  "packageManager": "npm@10.9.2"
 }

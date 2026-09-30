@@ -3,8 +3,10 @@
  */
 import { spawn, type ChildProcess } from 'node:child_process';
 import net from 'node:net';
+import { readFileSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
 
-const root = import.meta.dirname + '/../..';
+const root = join(import.meta.dirname, '..', '..');
 const isWindows = process.platform === 'win32';
 
 /** Ports the stack needs; the API port comes from apps/api/.env PORT so it cannot drift. */
@@ -17,8 +19,9 @@ const HMR_PORT = 24678;
  */
 async function readApiPort(): Promise<number> {
   try {
-    const envFile = Bun.file(root + '/apps/api/.env');
-    const text = await envFile.text();
+    const envPath = join(root, 'apps', 'api', '.env');
+    if (!existsSync(envPath)) return 3000;
+    const text = readFileSync(envPath, 'utf8');
     const m = text.match(/^PORT=(\d+)/m);
     return m ? Number(m[1]) : 3000;
   } catch {
@@ -54,8 +57,7 @@ for (const [label, port] of needed) {
 if (busy.length) {
   console.error(
     `\nCannot start: these ports are already in use:\n${busy.join('\n')}\n\n` +
-      `Most likely another \`bun run dev\` is still running. Stop it, or run:\n` +
-      `  taskkill /F /IM bun.exe /FI "WINDOWTITLE eq *bun*"\n` +
+      `Most likely another \`npm run dev\` is still running. Stop it, or run:\n` +
       `  taskkill /F /IM node.exe\n\n` +
       `Vite is configured with strictPort, so it will not silently move ports.\n`,
   );
@@ -73,15 +75,15 @@ interface Service {
 const services: Service[] = [
   {
     name: 'api',
-    cwd: root + '/apps/api',
-    cmd: 'bun',
+    cwd: join(root, 'apps', 'api'),
+    cmd: 'node',
     args: ['--watch', 'src/server.ts'],
     color: '\x1b[36m',
   },
   {
     name: 'web',
-    cwd: root + '/apps/web',
-    cmd: isWindows ? 'bun.exe' : 'bun',
+    cwd: join(root, 'apps', 'web'),
+    cmd: 'npm',
     args: ['run', 'dev:web'],
     color: '\x1b[35m',
   },
