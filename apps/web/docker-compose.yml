@@ -1,0 +1,66 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5173:5173"
+      # HMR runs on its own port (see vite.config.ts); unpublishing it left the
+      # browser with a dead websocket and no hot reload in Docker.
+      - "24678:24678"
+    volumes:
+      - /app/node_modules
+      - .:/app
+    environment:
+      - NODE_ENV=development
+      - DOCKER=true
+      - VITE_API_URL=http://localhost:3000
+    env_file:
+      - .env
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app
+          ignore:
+            - "node_modules/"
+            - "dist/"
+            - ".git/"
+            - "*.log"
+        - action: rebuild
+          path: package.json
+          target: /app/package.json
+        - action: rebuild
+          path: bun.lock
+          target: /app/bun.lock
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - /app/node_modules
+      - ./backend:/app
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+    env_file:
+      - backend/.env
+    develop:
+      watch:
+        - action: sync
+          path: ./backend
+          target: /app
+          ignore:
+            - "node_modules/"
+            - "dist/"
+            - ".git/"
+            - "*.log"
+        - action: rebuild
+          path: ./backend/package.json
+          target: /app/package.json
+        - action: rebuild
+          path: ./backend/bun.lock
+          target: /app/bun.lock

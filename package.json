@@ -1,39 +1,25 @@
 {
-  "name": "pulse-market-frontend",
+  "name": "pulse-market",
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
-    "dev": "bun run scripts/dev.ts",
-    "dev:web": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "lint": "tsc --noEmit",
-    "typecheck": "tsc --noEmit",
-    "scan:secrets": "bun scripts/scan-secrets.ts",
-    "test": "bun run typecheck && bun run build && bun run scan:secrets"
-  },
-  "dependencies": {
-    "@tailwindcss/vite": "^4.3.3",
-    "@tanstack/react-query": "^5.104.0",
-    "@vitejs/plugin-react": "^6.1.1",
-    "leaflet": "^1.9.4",
-    "lucide-react": "^0.546.0",
-    "motion": "^12.23.24",
-    "react": "^19.0.1",
-    "react-dom": "^19.0.1",
-    "zustand": "^5.0.15"
+    "dev": "bun run --cwd apps/web dev",
+    "dev:web": "bun run --cwd apps/web dev:web",
+    "build": "bun run --cwd apps/web build",
+    "preview": "bun run --cwd apps/web preview",
+    "lint": "bun run --cwd apps/web lint",
+    "typecheck": "bun run --cwd apps/web typecheck && bun run --cwd apps/api typecheck",
+    "scan:secrets": "bun run --cwd apps/web scan:secrets",
+    "test": "bun run --cwd apps/web test && bun run --cwd apps/api test",
+    "build:api": "bun run --cwd apps/api build",
+    "test:api": "bun run --cwd apps/api test",
+    "typecheck:api": "bun run --cwd apps/api typecheck"
   },
   "devDependencies": {
-    "@types/leaflet": "^1.9.22",
-    "@types/node": "^22.14.0",
-    "@types/react": "^19.3.0",
-    "@types/react-dom": "^19.3.0",
-    "autoprefixer": "^10.4.21",
-    "esbuild": "^0.25.0",
-    "tailwindcss": "^4.3.3",
-    "tsx": "^4.21.0",
-    "typescript": "^7.0.2",
-    "vite": "^8.3.0"
+    "typescript": "^7.0.2"
   }
 }

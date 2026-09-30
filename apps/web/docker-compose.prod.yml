@@ -1,0 +1,72 @@
+# Production stack: nginx serves the built frontend and proxies /api to the API.
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# The browser reaches the app on http://localhost:8080 and everything is
+# same-origin, so the bundle is built with no VITE_API_URL.
+#
+# The API is deliberately NOT published to the host. Only nginx talks to it, so
+# there is no way to bypass the reverse proxy, the security headers, or the rate
+# limiting by hitting the API port directly.
+
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      # The API sits behind nginx, so client IPs arrive via X-Forwarded-For.
+      # Without this, req.ip is the nginx container and every visitor shares a
+      # single rate-limit bucket.
+      TRUST_PROXY: "true"
+      # The CORS allowlist, and the origin helmet folds into the API's CSP
+      # `connect-src`.
+      #
+      # Set here rather than left to backend/.env, because that file is shared
+      # with the Vite dev server and carries `http://localhost:5173` in it - a
+      # production instance was therefore accepting the dev origin, which lets
+      # any page served from a visitor's own localhost read API responses.
+      # `environment` overrides `env_file`, so this wins.
+      FRONTEND_URL: "http://localhost:${WEB_PORT:-8080}"
+    env_file:
+      - backend/.env
+    expose:
+      - "3000"
+    networks:
+      - pulse
+    healthcheck:
+      test:
+        - CMD
+        - bun
+        - --eval
+        - "const r = await fetch('http://127.0.0.1:3000/api/health'); process.exit(r.ok ? 0 : 1)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - pulse
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+networks:
+  pulse:
+    driver: bridge

@@ -48,7 +48,7 @@ for (const [key, value] of Object.entries(frontendEnv)) {
 
 // 2. Real backend secrets must not appear in the built bundle.
 if (existsSync('dist')) {
-  const backendEnv = parseEnv('backend/.env');
+  const backendEnv = parseEnv('../apps/api/.env');
   const sensitive = ['SUPABASE_SERVICE_ROLE_KEY', 'CLOUDINARY_API_SECRET', 'SUPABASE_ANON_KEY']
     .map((k) => [k, backendEnv[k]] as const)
     .filter(([, v]) => v && !v.startsWith('your_'));
@@ -56,7 +56,7 @@ if (existsSync('dist')) {
   for (const file of walk('dist')) {
     const contents = readFileSync(file, 'utf8');
     for (const [name, secret] of sensitive) {
-      if (contents.includes(secret)) failures.push(`${name} from backend/.env appears in ${file}`);
+      if (contents.includes(secret)) failures.push(`${name} from apps/api/.env appears in ${file}`);
     }
     for (const { label, re } of SECRET_SHAPES) {
       if (re.test(contents)) failures.push(`${file} contains a ${label}`);

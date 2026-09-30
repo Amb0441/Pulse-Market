@@ -1,5 +1,6 @@
 import multer from 'multer';
 import path from 'node:path';
+import type { RequestHandler } from 'express';
 import { ALLOWED_IMAGE_EXT, ALLOWED_IMAGE_MIME } from '../schemas.js';
 import { maxUploadBytes } from '../config.js';
 import { AppError } from './errors.js';
@@ -36,7 +37,7 @@ export function detectImageMime(buffer: Buffer): string | null {
 
 const storage = multer.memoryStorage();
 
-export const uploadImages = multer({
+const uploadMiddleware = multer({
   storage,
   limits: {
     fileSize: maxUploadBytes,
@@ -58,7 +59,10 @@ export const uploadImages = multer({
     }
     cb(null, true);
   },
-}).array('images', 5);
+});
+
+/** Multer middleware for handling up to 5 images. */
+export const uploadImages = uploadMiddleware.array('images', 5) as unknown as RequestHandler;
 
 /** Post-multer content verification, applied after the buffer is in memory. */
 export function assertRealImages(files: Express.Multer.File[]) {

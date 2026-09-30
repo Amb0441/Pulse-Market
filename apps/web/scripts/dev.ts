@@ -4,20 +4,20 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import net from 'node:net';
 
-const root = import.meta.dirname + '/..';
+const root = import.meta.dirname + '/../..';
 const isWindows = process.platform === 'win32';
 
-/** Ports the stack needs; the API port comes from backend/.env PORT so it cannot drift. */
+/** Ports the stack needs; the API port comes from apps/api/.env PORT so it cannot drift. */
 const API_PORT = await readApiPort();
 const WEB_PORT = 5173;
 const HMR_PORT = 24678;
 
 /**
- * Reads PORT from backend/.env, defaulting to 3000 when unset.
+ * Reads PORT from apps/api/.env, defaulting to 3000 when unset.
  */
 async function readApiPort(): Promise<number> {
   try {
-    const envFile = Bun.file(root + '/backend/.env');
+    const envFile = Bun.file(root + '/apps/api/.env');
     const text = await envFile.text();
     const m = text.match(/^PORT=(\d+)/m);
     return m ? Number(m[1]) : 3000;
@@ -73,14 +73,14 @@ interface Service {
 const services: Service[] = [
   {
     name: 'api',
-    cwd: root + '/backend',
+    cwd: root + '/apps/api',
     cmd: 'bun',
     args: ['--watch', 'src/server.ts'],
     color: '\x1b[36m',
   },
   {
     name: 'web',
-    cwd: root,
+    cwd: root + '/apps/web',
     cmd: isWindows ? 'bun.exe' : 'bun',
     args: ['run', 'dev:web'],
     color: '\x1b[35m',
