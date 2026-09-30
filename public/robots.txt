@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+
+# Legal pages are public and should be indexed.
+Allow: /privacy
+Allow: /terms

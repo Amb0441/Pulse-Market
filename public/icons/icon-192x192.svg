@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="192" height="192">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#cf4a2a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#d65c4e;stop-opacity:1" />
+    </linearGradient>
+    <style>
+      @keyframes pulse-ring {
+        0% { transform: scale(0.8); opacity: 0.6; }
+        100% { transform: scale(1.4); opacity: 0; }
+      }
+      @keyframes pulse-core {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+      }
+      .pulse-ring {
+        transform-origin: 256px 256px;
+        animation: pulse-ring 2s ease-out infinite;
+      }
+      .pulse-ring:nth-child(2) { animation-delay: 0.4s; }
+      .pulse-ring:nth-child(3) { animation-delay: 0.8s; }
+      .pulse-ring:nth-child(4) { animation-delay: 1.2s; }
+      .pulse-core {
+        transform-origin: 256px 256px;
+        animation: pulse-core 2s ease-in-out infinite;
+      }
+    </style>
+  </defs>
+  <circle class="pulse-ring" cx="256" cy="256" r="200" fill="url(#grad)" opacity="0.4" />
+  <circle class="pulse-ring" cx="256" cy="256" r="200" fill="url(#grad)" opacity="0.3" />
+  <circle class="pulse-ring" cx="256" cy="256" r="200" fill="url(#grad)" opacity="0.2" />
+  <circle class="pulse-ring" cx="256" cy="256" r="200" fill="url(#grad)" opacity="0.1" />
+  <rect class="pulse-core" width="512" height="512" rx="96" fill="url(#grad)"/>
+  <text x="256" y="340" font-family="Georgia, serif" font-size="280" font-weight="700" fill="white" text-anchor="middle" dominant-baseline="middle">P</text>
+</svg>

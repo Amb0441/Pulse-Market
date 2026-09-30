@@ -1,0 +1,16 @@
+FROM oven/bun:1.4-alpine
+
+WORKDIR /app
+
+# Bun 1.2+ writes a text lockfile named `bun.lock` (not `bun.lockb`).
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
+
+COPY . .
+
+RUN chown -R bun:bun /app
+USER bun
+
+EXPOSE 5173
+
+CMD ["bun", "run", "dev"]

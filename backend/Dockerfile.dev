@@ -1,0 +1,21 @@
+FROM oven/bun:1.4-alpine
+
+WORKDIR /app
+
+# Copy manifests first so dependency install is cached independently of source.
+# NOTE: Bun 1.2+ writes a text lockfile named `bun.lock` (not `bun.lockb`).
+COPY package.json bun.lock ./
+
+# --frozen-lockfile makes CI fail loudly if the lockfile drifts from package.json.
+# --production would drop devDependencies, which the dev server needs (vite).
+RUN bun install --frozen-lockfile
+
+COPY . .
+
+# Drop root. node:alpine-style `node` user exists in the bun image.
+RUN chown -R bun:bun /app
+USER bun
+
+EXPOSE 3000
+
+CMD ["bun", "run", "dev"]

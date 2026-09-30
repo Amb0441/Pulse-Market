@@ -1,0 +1,50 @@
+{
+  "name": "Pulse Market",
+  "short_name": "Pulse Market",
+  "description": "Buy, sell, and connect with neighbors safely and instantly with privacy-first mapping and real-time alerts.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6f1e7",
+  "theme_color": "#cf4a2a",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icons/icon-512x512.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-192x192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/badge-72x72.svg",
+      "sizes": "72x72",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["shopping", "lifestyle", "social"],
+  "shortcuts": [
+    {
+      "name": "Sell an item",
+      "short_name": "Sell",
+      "description": "Create a new listing",
+      "url": "/?tab=sell",
+      "icons": [{ "src": "/icons/icon-512x512.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Messages",
+      "short_name": "Chats",
+      "description": "View your conversations",
+      "url": "/?tab=chats",
+      "icons": [{ "src": "/icons/icon-512x512.svg", "sizes": "any", "type": "image/svg+xml" }]
+    }
+  ],
+  "prefer_related_applications": false,
+  "related_applications": []
+}
