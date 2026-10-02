@@ -10,9 +10,15 @@ function getSupabase(): SupabaseClient {
   const supabaseUrl = process.env.SUPABASE_URL || '';
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
   try {
-    _supabase = createClient(supabaseUrl, supabaseKey, {
+    try {
+    _supabase = createClient(supabaseUrl || 'https://dummy.supabase.co', supabaseKey || 'dummy-key', {
       auth: { autoRefreshToken: false, persistSession: false },
     });
+  } catch {
+    _supabase = createClient('https://dummy.supabase.co', 'dummy-key', {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+  }
   } catch (e) {
     _supabase = {} as SupabaseClient;
   }
