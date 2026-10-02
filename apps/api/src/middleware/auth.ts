@@ -8,11 +8,21 @@ import { audit } from './audit.js';
 const supabaseUrl = process.env.SUPABASE_URL || env.SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SERVICE_ROLE_KEY || '';
 
-console.log('Auth init:', { hasUrl: !!supabaseUrl, hasKey: !!supabaseKey });
+// Don't crash at import time if env vars missing
+let supabase: SupabaseClient;
+try {
+  supabase = createClient(supabaseUrl || 'https://example.supabase.co', supabaseKey || 'example', {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+} catch (e) {
+  console.error('Failed to init supabase client', e);
+  // Create a dummy client
+  supabase = createClient('https://example.supabase.co', 'example', {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
 
-export const supabase: SupabaseClient = createClient(supabaseUrl || '', supabaseKey || '', {
-  auth: { autoRefreshToken: false, persistSession: false },
-});
+export { supabase };
 
 /** The only token accepted without contacting Supabase. See the guard below. */
 const TEST_TOKEN = 'test-token';
