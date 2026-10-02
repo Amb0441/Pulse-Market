@@ -278,7 +278,7 @@ app.post(
 
     const userId = requireUser(req).id;
     const stored = await storeImages(files, userId);
-    if (!stored.length && hasCloudinary) throw AppError.internal('Upload failed');
+    if (!stored.length) throw AppError.internal('Upload failed');
 
     audit.info('images_uploaded', { userId, count: stored.length });
     res.status(201).json({ images: stored });
