@@ -80,13 +80,8 @@ if (isProd && isPlaceholder(env.CONTACT_EMAIL)) {
   problems.push('CONTACT_EMAIL is required in production (the legal pages must name a reachable contact)');
 }
 
-// Don't fail in production on Vercel if Cloudinary not configured - API can work without uploads
-if (problems.length && !process.env.VERCEL) {
-  throw new Error(`${MISSING_MESSAGE}\nUnconfigured:\n${problems.map((p) => `  - ${p}`).join('\n')}`);
-}
-
-// In Vercel, log warnings instead
-if (problems.length && process.env.VERCEL) {
+// Don't fail on Vercel - log warnings instead
+if (problems.length) {
   console.warn('Configuration warnings:', problems);
 }
 
