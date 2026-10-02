@@ -112,15 +112,14 @@ app.get('/api/health/details', authenticate, requireAdmin, (_req, res) => {
   asyncHandler(async (req, res) => {
     const { email, password, username, lat, lng, location } = req.body;
 
-    // email_confirm: true - accounts are usable immediately with no confirmation
-    // email; the owner runs as a closed community, so the round trip isn't worth it.
+    // Email verification is required - accounts must confirm their email before signing in
     const { data, error } = await supabase.auth.admin.createUser({
       email,
       password,
       // Metadata feeds the handle_new_user trigger so the pin lands on the profile
       // row atomically; `location` is the typed area label, not an address.
       user_metadata: { username, lat, lng, location },
-      email_confirm: true,
+      email_confirm: false,
     });
 
     if (error) {
@@ -135,30 +134,10 @@ app.get('/api/health/details', authenticate, requireAdmin, (_req, res) => {
 
     const user = data.user!;
 
-    // Sign in right away so the form isn't submitted twice; if it fails anyway,
-    // fall through to returning just the user id and email.
-    const { data: session, error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (signInError || !session.session) {
-      audit.auth.failure('post_signup_signin', 'signup', { email: maskEmail(email) });
-      audit.auth.success(user.id, 'signup');
-      res.status(201).json({ user: { id: user.id, email: user.email } });
-      return;
-    }
-
     audit.auth.success(user.id, 'signup');
     res.status(201).json({
       user: { id: user.id, email: user.email },
-      // Full session, not just the access token: a new account with no refresh
-      // token would silently sign out an hour after signup.
-      session: {
-        access_token: session.session.access_token,
-        refresh_token: session.session.refresh_token,
-        expires_at: session.session.expires_at,
-      },
+      message: 'Check your email to verify your account before signing in',
     });
   }),
 );
