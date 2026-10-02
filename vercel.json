@@ -10,8 +10,8 @@
       "framework": "vite"
     }
   },
-  "routes": [
-    { "src": "/api/(.*)", "dest": { "service": "api" } },
-    { "src": "/(.*)", "dest": { "service": "web" } }
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
