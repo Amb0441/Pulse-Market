@@ -8,6 +8,8 @@ import { join } from 'node:path';
 
 const root = join(import.meta.dirname, '..', '..');
 const isWindows = process.platform === 'win32';
+const bunPath = isWindows ? 'C:\\Users\\aball\\.bun\\bin\\bun.exe' : 'bun';
+const bunxPath = isWindows ? 'C:\\Users\\aball\\.bun\\bin\\bunx.exe' : 'bunx';
 
 /** Ports the stack needs; the API port comes from apps/api/.env PORT so it cannot drift. */
 const API_PORT = await readApiPort();
@@ -57,8 +59,8 @@ for (const [label, port] of needed) {
 if (busy.length) {
   console.error(
     `\nCannot start: these ports are already in use:\n${busy.join('\n')}\n\n` +
-      `Most likely another \`npm run dev\` is still running. Stop it, or run:\n` +
-      `  taskkill /F /IM node.exe\n\n` +
+      `Most likely another \`bun run dev\` is still running. Stop it, or run:\n` +
+      `  taskkill /F /IM bun.exe\n\n` +
       `Vite is configured with strictPort, so it will not silently move ports.\n`,
   );
   process.exit(1);
@@ -76,15 +78,15 @@ const services: Service[] = [
   {
     name: 'api',
     cwd: join(root, 'apps', 'api'),
-    cmd: 'node',
+    cmd: bunPath,
     args: ['--watch', 'src/server.ts'],
     color: '\x1b[36m',
   },
   {
     name: 'web',
     cwd: join(root, 'apps', 'web'),
-    cmd: 'npm',
-    args: ['run', 'dev:web'],
+    cmd: bunxPath,
+    args: ['vite'],
     color: '\x1b[35m',
   },
 ];

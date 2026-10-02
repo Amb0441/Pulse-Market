@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "node --watch src/server.ts",
+    "dev": "bun --watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js",
+    "start": "bun dist/server.js",
     "typecheck": "tsc --noEmit",
-    "test": "node --test",
-    "audit": "npm audit"
+    "test": "bun test",
+    "audit": "bun audit"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",

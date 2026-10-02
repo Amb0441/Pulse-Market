@@ -10,6 +10,9 @@
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
 
+    <!-- CSP for dev: allows map tiles, Cloudinary images, Google Fonts, API calls, HMR websocket -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://res.cloudinary.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org; connect-src 'self' http://localhost:3000 ws://localhost:24678 https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://res.cloudinary.com https://fonts.googleapis.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#cf4a2a" />

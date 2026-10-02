@@ -12,8 +12,8 @@
 services:
   api:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/api/Dockerfile
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -32,7 +32,7 @@ services:
       # `environment` overrides `env_file`, so this wins.
       FRONTEND_URL: "http://localhost:${WEB_PORT:-8080}"
     env_file:
-      - backend/.env
+      - apps/api/.env
     expose:
       - "3000"
     networks:

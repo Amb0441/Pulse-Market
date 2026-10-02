@@ -5,6 +5,7 @@ WORKDIR /app
 # Copy manifests first so dependency install is cached independently of source.
 # NOTE: Bun 1.2+ writes a text lockfile named `bun.lock` (not `bun.lockb`).
 COPY package.json bun.lock ./
+COPY apps/api/package.json ./apps/api/
 
 # --frozen-lockfile makes CI fail loudly if the lockfile drifts from package.json.
 # --production would drop devDependencies, which the dev server needs (vite).
@@ -16,6 +17,7 @@ COPY . .
 RUN chown -R bun:bun /app
 USER bun
 
+WORKDIR /app/apps/api
 EXPOSE 3000
 
 CMD ["bun", "run", "dev"]

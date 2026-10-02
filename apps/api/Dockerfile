@@ -7,6 +7,7 @@
 FROM oven/bun:1.4-alpine AS deps
 WORKDIR /app
 COPY package.json bun.lock ./
+COPY apps/api/package.json ./apps/api/
 RUN bun install --frozen-lockfile --production
 
 FROM oven/bun:1.4-alpine AS runtime
@@ -17,8 +18,9 @@ ENV PORT=3000
 
 COPY --from=deps --chown=bun:bun /app/node_modules ./node_modules
 COPY --chown=bun:bun package.json bun.lock ./
-COPY --chown=bun:bun tsconfig.json ./
-COPY --chown=bun:bun src ./src
+COPY --chown=bun:bun apps/api/package.json ./apps/api/
+COPY --chown=bun:bun apps/api/tsconfig.json ./
+COPY --chown=bun:bun apps/api/src ./src
 
 # Run as the unprivileged `bun` user that ships with the official image. The API
 # holds a Supabase service-role key, so a container escape should not land on

@@ -2,7 +2,7 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: Dockerfile.dev
+      dockerfile: apps/web/Dockerfile.dev
     ports:
       - "5173:5173"
       # HMR runs on its own port (see vite.config.ts); unpublishing it left the
@@ -16,51 +16,51 @@ services:
       - DOCKER=true
       - VITE_API_URL=http://localhost:3000
     env_file:
-      - .env
+      - apps/web/.env
     develop:
       watch:
         - action: sync
-          path: .
-          target: /app
+          path: ./apps/web
+          target: /app/apps/web
           ignore:
             - "node_modules/"
             - "dist/"
             - ".git/"
             - "*.log"
         - action: rebuild
-          path: package.json
-          target: /app/package.json
+          path: ./apps/web/package.json
+          target: /app/apps/web/package.json
         - action: rebuild
-          path: bun.lock
+          path: ./bun.lock
           target: /app/bun.lock
 
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile.dev
+      context: .
+      dockerfile: apps/api/Dockerfile.dev
     ports:
       - "3000:3000"
     volumes:
       - /app/node_modules
-      - ./backend:/app
+      - .:/app
     environment:
       - NODE_ENV=development
       - PORT=3000
     env_file:
-      - backend/.env
+      - apps/api/.env
     develop:
       watch:
         - action: sync
-          path: ./backend
-          target: /app
+          path: ./apps/api
+          target: /app/apps/api
           ignore:
             - "node_modules/"
             - "dist/"
             - ".git/"
             - "*.log"
         - action: rebuild
-          path: ./backend/package.json
-          target: /app/package.json
+          path: ./apps/api/package.json
+          target: /app/apps/api/package.json
         - action: rebuild
-          path: ./backend/bun.lock
+          path: ./bun.lock
           target: /app/bun.lock

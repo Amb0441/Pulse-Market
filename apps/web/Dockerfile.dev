@@ -4,6 +4,7 @@ WORKDIR /app
 
 # Bun 1.2+ writes a text lockfile named `bun.lock` (not `bun.lockb`).
 COPY package.json bun.lock ./
+COPY apps/web/package.json ./apps/web/
 RUN bun install --frozen-lockfile
 
 COPY . .
@@ -11,6 +12,7 @@ COPY . .
 RUN chown -R bun:bun /app
 USER bun
 
+WORKDIR /app/apps/web
 EXPOSE 5173
 
 CMD ["bun", "run", "dev"]

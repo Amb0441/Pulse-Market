@@ -8,16 +8,23 @@
 FROM oven/bun:1.4-alpine AS builder
 WORKDIR /app
 
+# Copy root package.json and lockfile for workspace install
 COPY package.json bun.lock ./
+COPY apps/api/package.json ./apps/api/
+COPY apps/web/package.json ./apps/web/
 RUN bun install --frozen-lockfile
 
+# Copy source
 COPY . .
+
+# Build web app only (outputs to apps/web/dist)
+WORKDIR /app/apps/web
 RUN bun run build
 
 
 FROM nginx:1.27-alpine AS runtime
 
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY nginx-security-headers.conf /etc/nginx/snippets/security-headers.conf
 
