@@ -15,6 +15,8 @@ function getSupabase(): SupabaseClient {
   return _supabase;
 }
 
+export const supabase = getSupabase();
+
 const TEST_TOKEN = 'test-token';
 const testSeamEnabled = process.env.NODE_ENV === 'test';
 
@@ -42,8 +44,7 @@ export const authenticate = asyncHandler(async (req: Request, _res: Response, ne
     return next();
   }
 
-  const supabase = getSupabase();
-  const { data, error } = await supabase.auth.getUser(token);
+  const { data, error } = await getSupabase().auth.getUser(token);
 
   if (error || !data.user) {
     audit.auth.failure('invalid_token', 'bearer');
@@ -53,3 +54,25 @@ export const authenticate = asyncHandler(async (req: Request, _res: Response, ne
   (req as any).user = data.user;
   next();
 });
+
+export const optionalAuth = asyncHandler(async (req: Request, _res: Response, next: NextFunction) => {
+  if (!req.headers.authorization) return next();
+  return authenticate(req, _res as any, next);
+});
+
+export const requireUser = (req: Request) => {
+  const user = (req as any).user;
+  if (!user) throw AppError.unauthorized();
+  return user as { id: string; email: string; user_metadata?: Record<string, unknown> };
+};
+
+export const requireAdmin = (req: Request, _res: Response, next: NextFunction) => {
+  const user = (req as any).user;
+  if (!user) return next(AppError.unauthorized());
+  const appRole = (user.app_metadata as Record<string, unknown> | undefined)?.role;
+  if (appRole !== 'admin') {
+    audit.warn('admin_access_denied', { userId: user.id, path: req.path });
+    return next(AppError.forbidden('Admin access required'));
+  }
+  next();
+};
