@@ -11,15 +11,13 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SERVIC
 // Don't crash at import time if env vars missing
 let supabase: SupabaseClient;
 try {
-  supabase = createClient(supabaseUrl || 'https://example.supabase.co', supabaseKey || 'example', {
+  // Skip validation if missing - create with what we have
+  supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder-key', {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 } catch (e) {
   console.error('Failed to init supabase client', e);
-  // Create a dummy client
-  supabase = createClient('https://example.supabase.co', 'example', {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+  supabase = {} as SupabaseClient;
 }
 
 export { supabase };
