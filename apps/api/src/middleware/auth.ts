@@ -9,19 +9,11 @@ function getSupabase(): SupabaseClient {
   if (_supabase) return _supabase;
   const supabaseUrl = process.env.SUPABASE_URL || '';
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-  try {
-    try {
-    _supabase = createClient(supabaseUrl || 'https://dummy.supabase.co', supabaseKey || 'dummy-key', {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-  } catch {
-    _supabase = createClient('https://dummy.supabase.co', 'dummy-key', {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-  }
-  } catch (e) {
-    _supabase = {} as SupabaseClient;
-  }
+  const url = supabaseUrl && supabaseUrl.startsWith('http') ? supabaseUrl : 'https://placeholder.supabase.co';
+  const key = supabaseKey || 'placeholder-key';
+  _supabase = createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
   return _supabase;
 }
 
