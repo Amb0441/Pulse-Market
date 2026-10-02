@@ -2,7 +2,7 @@ import serverless from 'serverless-http';
 import { app } from '../apps/api/src/server.js';
 
 export const config = {
-  runtime: 'nodejs22.x',
+  runtime: 'nodejs20.x',
   maxDuration: 60,
 };
 
