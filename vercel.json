@@ -1,16 +1,21 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "services": {
+    "api": {
+      "root": "apps/api",
+      "framework": "express",
+      "buildCommand": "bun run build",
+      "startCommand": "node dist/server.js"
+    },
     "web": {
       "root": "apps/web",
       "framework": "vite",
       "buildCommand": "bun run build",
       "outputDirectory": "dist"
     },
-    "api": {
-      "root": "apps/api",
-      "framework": "express",
-      "buildCommand": "bun run build"
+    "app": {
+      "root": ".",
+      "runtime": "container"
     }
   },
   "rewrites": [
