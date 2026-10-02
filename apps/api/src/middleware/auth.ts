@@ -5,14 +5,12 @@ import { AppError, asyncHandler } from './errors.js';
 import { audit } from './audit.js';
 
 // Create client defensively
-const supabaseUrl = env.SUPABASE_URL || process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
-const supabaseKey = env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const supabaseUrl = process.env.SUPABASE_URL || env.SUPABASE_URL || '';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_SERVICE_ROLE_KEY || '';
 
-if (!supabaseUrl || !supabaseKey) {
-  console.error('Missing Supabase credentials:', { hasUrl: !!supabaseUrl, hasKey: !!supabaseKey });
-}
+console.log('Auth init:', { hasUrl: !!supabaseUrl, hasKey: !!supabaseKey });
 
-export const supabase: SupabaseClient = createClient(supabaseUrl || 'https://test.supabase.co', supabaseKey || 'test-key', {
+export const supabase: SupabaseClient = createClient(supabaseUrl || '', supabaseKey || '', {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
