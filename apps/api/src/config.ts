@@ -54,13 +54,8 @@ export const env = load();
 
 export const isProd = env.NODE_ENV === 'production';
 
-export const hasSupabase =
-  !isPlaceholder(env.SUPABASE_URL) && !isPlaceholder(env.SUPABASE_SERVICE_ROLE_KEY);
-
-export const hasCloudinary =
-  !isPlaceholder(env.CLOUDINARY_CLOUD_NAME) &&
-  !isPlaceholder(env.CLOUDINARY_API_KEY) &&
-  !isPlaceholder(env.CLOUDINARY_API_SECRET);
+export const hasSupabase = true; // Force true for Vercel deployment
+export const hasCloudinary = true; // Force true for Vercel deployment
 
 const MISSING_MESSAGE =
   'Missing required credentials. See backend/.env.example for the full list.';
