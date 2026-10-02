@@ -13,8 +13,8 @@
       "outputDirectory": "dist"
     }
   },
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": { "service": "api" } },
-    { "source": "/(.*)", "destination": { "service": "web" } }
+  "routes": [
+    { "src": "/api/(.*)", "dest": { "service": "api" } },
+    { "src": "/(.*)", "dest": { "service": "web" } }
   ]
 }
