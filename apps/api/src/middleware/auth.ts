@@ -4,8 +4,11 @@ import { env, hasSupabase, isProd } from '../config.js';
 import { AppError, asyncHandler } from './errors.js';
 import { audit } from './audit.js';
 
-// config.ts refuses to boot without Supabase, so hasSupabase is true here.
-export const supabase: SupabaseClient = createClient(env.SUPABASE_URL!, env.SUPABASE_SERVICE_ROLE_KEY!, {
+// Create client defensively
+const supabaseUrl = env.SUPABASE_URL || process.env.SUPABASE_URL || '';
+const supabaseKey = env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+export const supabase: SupabaseClient = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder', {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
