@@ -1199,6 +1199,11 @@ if (import.meta.main) {
   }
 }
 
+// Start realtime in serverless context (Vercel may reuse lambdas)
+if (process.env.VERCEL) {
+  startRealtime();
+}
+
 export { app };
 
 
