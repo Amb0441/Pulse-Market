@@ -12,10 +12,6 @@
       "framework": "vite",
       "buildCommand": "bun run build",
       "outputDirectory": "dist"
-    },
-    "app": {
-      "root": ".",
-      "runtime": "container"
     }
   },
   "rewrites": [
