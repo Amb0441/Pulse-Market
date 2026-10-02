@@ -9,9 +9,13 @@ function getSupabase(): SupabaseClient {
   if (_supabase) return _supabase;
   const supabaseUrl = process.env.SUPABASE_URL || '';
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-  _supabase = createClient(supabaseUrl, supabaseKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+  try {
+    _supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder-key', {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+  } catch (e) {
+    _supabase = {} as SupabaseClient;
+  }
   return _supabase;
 }
 
