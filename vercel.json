@@ -3,14 +3,11 @@
   "services": {
     "api": {
       "root": "apps/api",
-      "framework": "express",
-      "buildCommand": "bun run build"
+      "framework": "express"
     },
     "web": {
       "root": "apps/web",
-      "framework": "vite",
-      "buildCommand": "bun run build",
-      "outputDirectory": "dist"
+      "framework": "vite"
     }
   },
   "routes": [
