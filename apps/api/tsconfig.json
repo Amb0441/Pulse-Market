@@ -15,7 +15,6 @@
     "sourceMap": true,
     "noUncheckedIndexedAccess": false,
     "types": ["node"]
-  },
     "paths": {
       "@/*": ["./src/*"]
     }
