@@ -1,7 +1,8 @@
 import React from 'react';
-import { Map, Grid, MessageSquare, User as UserIcon, Plus, Bell, LogOut, MapPin, Activity } from 'lucide-react';
+import { Map, Grid, MessageSquare, User as UserIcon, Plus, Bell, LogOut, MapPin } from 'lucide-react';
 import { UserProfile } from '../types';
 import { describeArea } from '../lib/geo';
+import { PulseMark } from './PulseMark';
 
 type Tab = 'map' | 'feed' | 'chats' | 'dashboard';
 
@@ -63,10 +64,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center gap-2.5 min-w-0">
             <button
               onClick={() => setActiveTab('feed')}
-              className="flex-shrink-0 text-left group touch-manipulation"
+              className="flex-shrink-0 text-left group touch-manipulation focus-ring rounded-[10px]"
               aria-label="Pulse home"
             >
-              <Activity className="w-7 h-7 sm:w-8 sm:h-8 text-clay group-hover:text-clay-hover transition-colors" aria-hidden="true" />
+              <PulseMark className="w-9 h-9 sm:w-10 sm:h-10 shadow-[2px_2px_0_var(--color-ink)]" />
             </button>
 
             <div className="flex flex-col items-start leading-none min-w-0">
