@@ -30,13 +30,13 @@
     -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://res.cloudinary.com https://*.supabase.co https://tile.openstreetmap.org https://*.tile.openstreetmap.org; connect-src 'self' __CSP_API_ORIGIN__http://127.0.0.1:3000 http://localhost:3000 https://*.supabase.co wss://*.supabase.co ws://localhost:24678 https://tile.openstreetmap.org https://*.tile.openstreetmap.org; object-src 'none'; base-uri 'self'; form-action 'self'">
 
-    <!-- PWA: black-translucent draws under the status bar; the opaque header
-         paints safe-area padding so the logo stays sharp (no backdrop-blur). -->
+    <!-- PWA: `default` status bar keeps content below the system chrome so the
+         header/tab bar are not fighting the Dynamic Island / home indicator. -->
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#f6f1e7" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Pulse Market" />
     <link rel="icon" type="image/svg+xml" href="/icons/icon-192x192.svg" />
     <link rel="icon" type="image/svg+xml" href="/icons/badge-72x72.svg" sizes="72x72" />

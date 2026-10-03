@@ -156,12 +156,11 @@ export const Navbar: React.FC<NavbarProps> = ({
       </header>
 
       <nav
-        className="lg:hidden fixed bottom-0 inset-x-0 z-[var(--z-sticky)] bg-card border-t border-line"
+        className="mobile-tabbar lg:hidden"
         role="navigation"
         aria-label="Mobile navigation"
-        style={{ height: 'var(--mobile-nav-height)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
-        <div className="grid grid-cols-5 items-end h-[3.75rem] px-1 pb-1">
+        <div className="mobile-tabbar-inner grid grid-cols-5 items-end px-1 pb-1">
           {[TABS[0], TABS[1]].map(({ id, label, Icon }) => (
             <MobileTab
               key={id}

@@ -109,8 +109,10 @@
 
 @layer base {
   :root {
-    /* Tab row (3.75rem) + home-indicator inset — used by main clearance + fixed nav. */
-    --mobile-nav-height: calc(3.75rem + env(safe-area-inset-bottom, 0px));
+    /* Tab row only — safe-area is padding on the bar, not double-counted height. */
+    --mobile-tabbar-content: 3.75rem;
+    --mobile-nav-height: calc(var(--mobile-tabbar-content) + constant(safe-area-inset-bottom));
+    --mobile-nav-height: calc(var(--mobile-tabbar-content) + env(safe-area-inset-bottom, 0px));
   }
 
   html {
@@ -122,6 +124,7 @@
     scroll-behavior: smooth;
     height: 100%;
     height: 100dvh;
+    height: -webkit-fill-available;
     overscroll-behavior: none;
     touch-action: manipulation;
   }
@@ -148,6 +151,7 @@
     text-rendering: optimizeLegibility;
     height: 100%;
     height: 100dvh;
+    height: -webkit-fill-available;
     overscroll-behavior: none;
     /* Stop iOS rubber-banding the document behind fixed app chrome. */
     overflow: hidden;
@@ -156,6 +160,7 @@
   #root {
     height: 100%;
     height: 100dvh;
+    height: -webkit-fill-available;
     overflow: hidden;
   }
 
@@ -213,34 +218,43 @@
   }
 
   .safe-bottom {
+    padding-bottom: constant(safe-area-inset-bottom);
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   .safe-top {
+    padding-top: constant(safe-area-inset-top);
     padding-top: env(safe-area-inset-top, 0px);
   }
 
   .safe-left {
+    padding-left: constant(safe-area-inset-left);
     padding-left: env(safe-area-inset-left, 0px);
   }
 
   .safe-right {
+    padding-right: constant(safe-area-inset-right);
     padding-right: env(safe-area-inset-right, 0px);
   }
 
   /* Add safe-area on top of an existing padding utility (avoids pb-6 vs safe-bottom clobber). */
   .safe-pb-3 {
+    padding-bottom: calc(0.75rem + constant(safe-area-inset-bottom));
     padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
   }
 
   .safe-pt-header {
+    padding-top: calc(0.75rem + constant(safe-area-inset-top));
     padding-top: calc(0.75rem + env(safe-area-inset-top, 0px));
   }
 
   .app-height {
     height: 100%;
     height: 100dvh;
+    height: -webkit-fill-available;
+    max-height: 100%;
     max-height: 100dvh;
+    max-height: -webkit-fill-available;
   }
 
   .overscroll-none {
@@ -250,14 +264,59 @@
   /* Installed home-screen PWA: keep chrome opaque so the status-bar overlap
      never frosts the brand mark the way backdrop-blur did. */
   @media (display-mode: standalone), (display-mode: fullscreen) {
-    body {
+    html,
+    body,
+    #root {
       background-color: var(--color-paper);
+      /* iOS standalone often needs fill-available instead of dvh alone. */
+      height: 100%;
+      height: -webkit-fill-available;
     }
 
     header {
       -webkit-backdrop-filter: none !important;
       backdrop-filter: none !important;
       background-color: var(--color-paper) !important;
+    }
+
+    /* Bottom tab bar paints into the home-indicator zone (no beige gap). */
+    .mobile-tabbar {
+      background-color: var(--color-card) !important;
+    }
+
+    /* Guarantee top chrome clears the Dynamic Island / status bar. */
+    .safe-top {
+      padding-top: constant(safe-area-inset-top);
+      padding-top: max(env(safe-area-inset-top, 0px), 20px);
+    }
+  }
+
+  /* Fixed phone tab bar: content row + safe-area padding, one continuous fill.
+     Do NOT also bake safe-area into height — that left a beige gap under the bar. */
+  .mobile-tabbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: var(--z-sticky);
+    background-color: var(--color-card);
+    border-top: 1px solid var(--color-line);
+    padding-bottom: constant(safe-area-inset-bottom);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    /* Paint past the home indicator in case iOS insets the fixed box. */
+    margin-bottom: 0;
+    transform: translateZ(0);
+  }
+
+  .mobile-tabbar-inner {
+    height: var(--mobile-tabbar-content);
+  }
+
+  @media (display-mode: standalone), (display-mode: fullscreen) {
+    .mobile-tabbar {
+      /* Extend the solid fill into the home-indicator zone even if the
+         layout box is inset — kills the beige strip under the tabs. */
+      box-shadow: 0 calc(env(safe-area-inset-bottom, 0px) + 2px) 0 0 var(--color-card);
     }
   }
 
