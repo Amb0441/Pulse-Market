@@ -142,7 +142,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthenticated, theme
       <header className="w-full shrink-0 bg-paper border-b border-line safe-top">
         <div className="w-full px-4 sm:px-8 h-14 sm:h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-            <PulseMark className="w-10 h-10 sm:w-11 sm:h-11 shadow-[2px_2px_0_var(--color-ink)] shrink-0" />
+            <PulseMark className="w-10 h-10 sm:w-11 sm:h-11 shrink-0" />
             <span className="leading-none min-w-0">
               <span className="block font-display text-xl sm:text-2xl font-bold text-ink tracking-tight truncate">
                 Pulse Market

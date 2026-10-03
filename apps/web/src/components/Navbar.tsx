@@ -67,7 +67,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="flex-shrink-0 text-left group touch-manipulation focus-ring rounded-[10px]"
               aria-label="Pulse home"
             >
-              <PulseMark className="w-9 h-9 sm:w-10 sm:h-10 shadow-[2px_2px_0_var(--color-ink)]" />
+              <PulseMark className="w-9 h-9 sm:w-10 sm:h-10" />
             </button>
 
             <div className="flex flex-col items-start leading-none min-w-0">
