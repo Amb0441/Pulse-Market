@@ -1,5 +1,5 @@
 import express from 'express';
-import { env, hasCloudinary, hasSupabase, isProd } from './config.js';
+import { env, hasCloudinary, hasSupabase, isProd, legal } from './config.js';
 import { audit } from './middleware/audit.js';
 import { authenticate, requireAdmin, requireUser, supabase } from './middleware/auth.js';
 import { openRealtimeStream, realtimeSubscriberCount, startRealtime } from './services/realtime.js';
@@ -112,19 +112,21 @@ app.get('/api/health/details', authenticate, requireAdmin, (_req, res) => {
   asyncHandler(async (req, res) => {
     const { email, password, username, lat, lng, location } = req.body;
 
-    // Email confirmation is skipped so the new account can sign in immediately.
-    const { data, error } = await supabase.auth.admin.createUser({
+    // admin.createUser never sends mail. generateLink({ type: 'signup' }) creates
+    // the user (metadata still feeds handle_new_user) and sends the confirmation
+    // email through Supabase's mailer.
+    const { data, error } = await supabase.auth.admin.generateLink({
+      type: 'signup',
       email,
       password,
-      // Metadata feeds the handle_new_user trigger so the pin lands on the profile
-      // row atomically; `location` is the typed area label, not an address.
-      user_metadata: { username, lat, lng, location },
-      email_confirm: true,
+      options: {
+        data: { username, lat, lng, location },
+        redirectTo: `${legal.appUrl}/`,
+      },
     });
 
     if (error) {
       audit.auth.failure(error.message, 'signup', { email: maskEmail(email) });
-      // Do not echo provider internals; normalize the common case.
       const exists = /already|registered|exists/i.test(error.message);
       throw AppError.badRequest(
         exists ? 'An account with that email already exists' : 'Could not create account',
@@ -132,31 +134,29 @@ app.get('/api/health/details', authenticate, requireAdmin, (_req, res) => {
       );
     }
 
-    const user = data.user!;
-
-    const { data: signedIn, error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (signInError || !signedIn.session) {
-      audit.auth.failure(signInError?.message ?? 'no_session', 'signup_signin', {
-        email: maskEmail(email),
-      });
-      throw AppError.badRequest(
-        'Account created but we could not sign you in. Try signing in with the same email and password.',
-        'SIGNUP_SIGNIN_FAILED',
-      );
+    const user = data.user;
+    if (!user) {
+      throw AppError.badRequest('Could not create account', 'SIGNUP_FAILED');
     }
+
+    // If the project does not require confirmed email, sign them in now.
+    // Otherwise they stay on the landing page until they click the message.
+    const { data: signedIn } = await supabase.auth.signInWithPassword({ email, password });
 
     audit.auth.success(user.id, 'signup');
     res.status(201).json({
       user: { id: user.id, email: user.email },
-      session: {
-        access_token: signedIn.session.access_token,
-        refresh_token: signedIn.session.refresh_token,
-        expires_at: signedIn.session.expires_at,
-      },
+      ...(signedIn?.session
+        ? {
+            session: {
+              access_token: signedIn.session.access_token,
+              refresh_token: signedIn.session.refresh_token,
+              expires_at: signedIn.session.expires_at,
+            },
+          }
+        : {
+            message: 'Check your email to verify your account before signing in',
+          }),
     });
   }),
 );
