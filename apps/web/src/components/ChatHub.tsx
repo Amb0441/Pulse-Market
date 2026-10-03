@@ -237,6 +237,14 @@ export const ChatHub: React.FC<ChatHubProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeChatId, activeStatus]);
 
+  const setComposerActive = useCallback(
+    (active: boolean) => {
+      composerFocusedRef.current = active;
+      onComposerActiveChange?.(active);
+    },
+    [onComposerActiveChange],
+  );
+
   const handleViewListing = () => {
     setShowThreadMenu(false);
     if (activeChat) onViewListing?.(activeChat.listingId);
@@ -325,14 +333,6 @@ export const ChatHub: React.FC<ChatHubProps> = ({
         </button>
       )}
     </div>
-  );
-
-  const setComposerActive = useCallback(
-    (active: boolean) => {
-      composerFocusedRef.current = active;
-      onComposerActiveChange?.(active);
-    },
-    [onComposerActiveChange],
   );
 
   const renderMessages = (maxW: string, scrollerRef: React.RefObject<HTMLDivElement | null>) => (
