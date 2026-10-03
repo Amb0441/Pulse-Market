@@ -51,6 +51,8 @@ export interface MessageLike {
   sender_id: string;
   read_at: string | null;
   created_at: string;
+  /** Present on chat rows; last-message previews read this. */
+  body?: string;
 }
 
 /**

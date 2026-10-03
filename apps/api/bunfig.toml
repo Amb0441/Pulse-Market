@@ -1,4 +1,6 @@
 [test]
+# Only the source tests; compiled leftovers in dist/ would double-run and fail.
+root = "./tests"
 # Runs before any test file so tests/setup.ts can pin the environment and
 # neutralise the developer's real credentials in backend/.env.
 preload = ["./tests/setup.ts"]

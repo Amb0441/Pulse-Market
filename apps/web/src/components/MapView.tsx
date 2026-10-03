@@ -131,9 +131,9 @@ export const MapView: React.FC<MapViewProps> = ({
       // Listings without coordinates are skipped rather than passed to Leaflet, which
       // throws; the panel reports how many were left out.
       if (listing.lat === undefined || listing.lng === undefined) return;
-      if (listing.distanceKm !== undefined && listing.distanceKm > selectedRadiusKm) return;
       const sold = listing.status === 'sold';
-      const bg = sold ? '#8a8577' : '#1c1a16';
+      const farther = listing.distanceKm !== undefined && listing.distanceKm > selectedRadiusKm;
+      const bg = sold ? '#8a8577' : farther ? '#cf4a2a' : '#1c1a16';
       const label = formatPrice(listing.price);
 
       const icon = L.divIcon({
@@ -162,6 +162,9 @@ export const MapView: React.FC<MapViewProps> = ({
   const unmappableCount = listings.length - mappable.length;
   const visibleCount = mappable.filter(
     (l) => l.distanceKm === undefined || l.distanceKm <= selectedRadiusKm,
+  ).length;
+  const fartherCount = mappable.filter(
+    (l) => l.distanceKm !== undefined && l.distanceKm > selectedRadiusKm,
   ).length;
   const inRange = center ? visibleCount : 0;
 
@@ -203,10 +206,18 @@ export const MapView: React.FC<MapViewProps> = ({
         </div>
 
         {center ? (
-          <p className="mt-4 pt-3 border-t border-line text-xs text-ink-soft">
-            <span className="font-display text-xl font-bold text-ink mr-1">{inRange}</span>
-            {inRange === 1 ? 'item' : 'items'} in range
-          </p>
+          <div className="mt-4 pt-3 border-t border-line text-xs text-ink-soft space-y-1">
+            <p>
+              <span className="font-display text-xl font-bold text-ink mr-1">{inRange}</span>
+              {inRange === 1 ? 'item' : 'items'} within {selectedRadiusKm} km
+            </p>
+            {fartherCount > 0 && (
+              <p>
+                <span className="font-display text-lg font-bold text-clay mr-1">{fartherCount}</span>
+                {fartherCount === 1 ? 'item' : 'items'} not within {selectedRadiusKm} km
+              </p>
+            )}
+          </div>
         ) : (
           <p className="mt-4 pt-3 border-t border-line text-[11px] leading-snug text-ink-soft">
             <LocateFixed className="w-3.5 h-3.5 inline mb-0.5" aria-hidden="true" />{' '}
@@ -230,7 +241,7 @@ export const MapView: React.FC<MapViewProps> = ({
         <div className="absolute z-10 top-5 right-5 hidden lg:flex items-center gap-2 bg-card border border-line rounded-full px-4 py-2 shadow-sm">
           <Navigation className="w-3.5 h-3.5 text-clay" />
           <span className="text-xs font-medium">
-            {visibleCount === 1 ? '1 pin' : `${visibleCount} pins`}
+            {mappable.length === 1 ? '1 pin' : `${mappable.length} pins`}
             {mappable[0].distanceKm ? ` · nearest ${formatDistance(mappable[0].distanceKm)}` : ''}
           </span>
         </div>

@@ -211,7 +211,7 @@ const SECTIONS: Record<LegalKind, { heading: string; body: string[] }[]> = {
     {
       heading: 'How do reviews work?',
       body: [
-        'Once an item is marked sold, each person in that conversation can leave one review - a rating and a short comment. Your rating and reviews show on your profile.',
+        'Once an item is marked sold, each person in that conversation can leave one review - a rating and a short comment. Reviews you write and reviews neighbors leave you both show on Profile.',
       ],
     },
     {

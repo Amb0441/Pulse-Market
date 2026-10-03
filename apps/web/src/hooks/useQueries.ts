@@ -11,6 +11,7 @@ export interface ListingsParams {
   lat?: number;
   lng?: number;
   category?: string;
+  limit?: number;
 }
 
 export function useListings(params?: ListingsParams) {
@@ -116,6 +117,9 @@ export function useUpdateProfile() {
     meta: { inline: true },
     onSuccess: (data) => {
       qc.setQueryData(['auth', 'me'], toUserProfile(data.user));
+      if (Array.isArray(data.reviews)) {
+        qc.setQueryData(['reviews'], data.reviews.map(toReview));
+      }
       // Every card embeds the seller's name and every distance used the old pin, so
       // a rename or a moved pin leaves the feed stale; refetch both caches.
       void qc.invalidateQueries({ queryKey: ['listings'] });
@@ -339,6 +343,7 @@ export function useReviews() {
     queryKey: ['reviews'],
     queryFn: async () => ((await api.reviews.list()) as ApiReview[]).map(toReview),
     enabled: !!getToken(),
+    refetchInterval: 30_000,
   });
 }
 
@@ -348,7 +353,12 @@ export function useCreateReview() {
   return useMutation({
     mutationFn: (input: { conversationId: string; rating: number; comment: string }) =>
       api.reviews.create(input),
-    onSuccess: () => {
+    onSuccess: (row) => {
+      const review = toReview(row as ApiReview);
+      qc.setQueryData<Review[]>(['reviews'], (old) => {
+        const rest = (old ?? []).filter((r) => r.id !== review.id);
+        return [review, ...rest];
+      });
       void qc.invalidateQueries({ queryKey: ['reviews'] });
       void qc.invalidateQueries({ queryKey: ['notifications'] });
       // The profile header shows the new average, which this write just changed.
@@ -390,12 +400,18 @@ export function useMarkNotificationsRead() {
 }
 
 export function useAuth() {
+  const qc = useQueryClient();
   return useQuery<UserProfile | null>({
     queryKey: ['auth', 'me'],    // With no token, report "signed out" instead of a request that can only 401.
     queryFn: async (): Promise<UserProfile | null> => {
       if (!getToken()) return null;
       try {
         const res = await api.auth.me();
+        // Seed the reviews tab from the same round-trip so Profile is not empty
+        // while /api/reviews is still in flight, or if that route errors.
+        if (Array.isArray(res.reviews)) {
+          qc.setQueryData(['reviews'], res.reviews.map(toReview));
+        }
         return toUserProfile(res.user);
       } catch (err) {
         // A 401 that survived fetchJson's refresh-and-retry means the session is dead:

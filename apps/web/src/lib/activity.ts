@@ -7,7 +7,11 @@ import { formatRelative } from './format';
  * timestamp needs a second look, so `createdAt` stays ISO and callers format it.
  */
 export function toReview(row: ApiReview): Review {
-  return { ...row };
+  return {
+    ...row,
+    targetName: row.targetName || 'A neighbor',
+    targetAvatar: row.targetAvatar ?? '',
+  };
 }
 
 /**

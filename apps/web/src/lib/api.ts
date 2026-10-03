@@ -298,6 +298,8 @@ export interface ApiReview {
   reviewerName: string;
   reviewerAvatar: string;
   targetUserId: string;
+  targetName: string;
+  targetAvatar: string;
   rating: number;
   comment: string;
   /** ISO timestamp; format it for display. */
@@ -320,12 +322,13 @@ export interface ApiNotification {
 
 export const api = {
   listings: {
-    list: (params?: { radius?: number; lat?: number; lng?: number; category?: string }) => {
+    list: (params?: { radius?: number; lat?: number; lng?: number; category?: string; limit?: number }) => {
       const search = new URLSearchParams();
       // lat/lng are the viewer's pin; sent so the API narrows the search itself.
       if (params?.radius !== undefined) search.set('radius', String(params.radius));
       if (params?.lat !== undefined) search.set('lat', String(params.lat));
       if (params?.lng !== undefined) search.set('lng', String(params.lng));
+      if (params?.limit !== undefined) search.set('limit', String(params.limit));
       if (params?.category && params.category !== 'All') search.set('category', params.category);
       const qs = search.toString();
       return fetchJson<ApiListing[]>(`/listings${qs ? `?${qs}` : ''}`);
@@ -369,7 +372,7 @@ export const api = {
   auth: {
     // No `demo` flag: demo mode is gone, so the server never reports one. If it
     // ever reappears, that is a bug worth failing on rather than ignoring.
-    me: () => fetchJson<{ user: ApiProfile }>('/auth/me'),
+    me: () => fetchJson<{ user: ApiProfile; reviews?: ApiReview[] }>('/auth/me'),
     // Sets or moves the member's pin and edits name and bio. PATCH so only the
     // supplied fields change: editing a location cannot blank a bio.
     updateProfile: (patch: {
@@ -380,7 +383,7 @@ export const api = {
       lat?: number;
       lng?: number;
     }) =>
-      fetchJson<{ user: ApiProfile }>('/auth/me', {
+      fetchJson<{ user: ApiProfile; reviews?: ApiReview[] }>('/auth/me', {
         method: 'PATCH',
         body: JSON.stringify(patch),
       }),

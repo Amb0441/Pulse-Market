@@ -35,6 +35,12 @@ export function isInPhilippines({ lat, lng }: LatLng): boolean {
   );
 }
 
+/**
+ * How far the feed query looks. The 1–10 km chips only split nearby vs farther;
+ * listings outside the selected chip still show, in a separate group.
+ */
+export const FEED_FETCH_RADIUS_KM = 50;
+
 const EARTH_RADIUS_KM = 6371;
 
 /** Great-circle distance in kilometres between two points. */

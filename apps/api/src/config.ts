@@ -58,13 +58,12 @@ export const env = load();
 
 export const isProd = env.NODE_ENV === 'production';
 
-// Still check, but don't fail - also check raw env
-export const hasSupabase = !!(env.SUPABASE_URL || process.env.SUPABASE_URL) && !!(env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY);
-export const hasCloudinary = !!(
-  (env.CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME) &&
-  (env.CLOUDINARY_API_KEY || process.env.CLOUDINARY_API_KEY) &&
-  (env.CLOUDINARY_API_SECRET || process.env.CLOUDINARY_API_SECRET)
-);
+export const hasSupabase =
+  !isPlaceholder(env.SUPABASE_URL) && !isPlaceholder(env.SUPABASE_SERVICE_ROLE_KEY);
+export const hasCloudinary =
+  !isPlaceholder(env.CLOUDINARY_CLOUD_NAME) &&
+  !isPlaceholder(env.CLOUDINARY_API_KEY) &&
+  !isPlaceholder(env.CLOUDINARY_API_SECRET);
 
 const MISSING_MESSAGE =
   'Missing required credentials. See apps/api/.env.example for the full list.';
@@ -84,10 +83,14 @@ if (isProd && isPlaceholder(env.CONTACT_EMAIL)) {
   problems.push('CONTACT_EMAIL is required in production (the legal pages must name a reachable contact)');
 }
 
-// Missing credentials are a warning, not a fatal error, so a partial local
-// setup still boots and reports what is absent.
+// Tests boot the app with placeholders; every other environment must fail closed.
 if (problems.length) {
-  console.warn('Configuration warnings:', problems);
+  const message = `${MISSING_MESSAGE}\n${problems.map((p) => `  - ${p}`).join('\n')}`;
+  if (env.NODE_ENV === 'test') {
+    console.warn(message);
+  } else {
+    throw new Error(message);
+  }
 }
 
 /** Origins allowed to call the API. Never a wildcard when credentials are involved. */

@@ -1,13 +1,13 @@
 {
   "name": "pulse-market-api",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "type": "module",
   "scripts": {
     "dev": "bun --watch src/server.ts",
     "build": "tsc --skipLibCheck",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
-    "test": "bun test",
+    "test": "bun test tests",
     "audit": "bun audit"
   },
   "dependencies": {

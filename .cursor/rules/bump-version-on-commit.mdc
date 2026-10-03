@@ -1,17 +1,15 @@
 ---
-description: Bump the app version on every git commit
+description: Bump the app version on every commit
 alwaysApply: true
 ---
 
 # Bump version on every commit
 
-Whenever you create a git commit in this repo, bump the patch version in the same commit (1.0.6 → 1.0.7, and so on). Do this even if the user only said “commit” or “push”.
+When the user asks to commit (or to commit and push), bump the patch version in the same commit.
 
-`apps/web/package.json` `version` is the source of truth (Vite stamps it into the UI and the service worker cache). Keep these in lockstep:
-
-- `apps/web/package.json`
-- `apps/api/package.json`
-- root `package.json`
-- the matching `version` fields for those packages in `package-lock.json` and `apps/web/package-lock.json`
-
-Do not change dependency versions (for example `content-type`). Skip the bump only if the commit is already a version-only bump with no other changes.
+- Source of truth: `apps/web/package.json` (`version`). That value is what the UI and service worker show.
+- Also bump `apps/api/package.json` and the root `package.json` to the same number.
+- If `package-lock.json` records those workspace versions, update them too.
+- Do not bump for no-op commits, docs-only work the user asks to skip, or when they explicitly say not to bump.
+- Patch bump: `1.0.8` → `1.0.9`. Use minor/major only if they ask.
+- Put the version in the commit message (for example `Show written reviews on the profile (1.0.9)`).

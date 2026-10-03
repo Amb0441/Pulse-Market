@@ -189,7 +189,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({ chat, currentUser, onC
               </button>
 
               <p className="text-center text-xs text-ink-soft">
-                Reviews are only visible after both parties submit theirs.
+                Your review shows on their profile, and theirs on yours.
               </p>
             </div>
           )}

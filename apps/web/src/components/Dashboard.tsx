@@ -3,6 +3,7 @@ import { Listing, UserProfile, Review, ItemStatus } from '../types';
 import { Package, Heart, Star, Trash2, Eye, Clock, Settings, Plus, MapPin, LogOut } from 'lucide-react';
 import { formatRelative, formatDistance, formatPrice, formatYear } from '../lib/format';
 import { ListingImage } from './ListingImage';
+import { Avatar } from './Avatar';
 
 interface DashboardProps {
     user: UserProfile;
@@ -93,7 +94,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
    * Saved items as the rows the server returned; the feed cannot back this list.
    */
   const savedListings = savedRows;
-  const myReviews = reviews.filter((r) => r.targetUserId === user.id);
+  const receivedReviews = reviews.filter((r) => r.targetUserId === user.id);
+  const givenReviews = reviews.filter((r) => r.reviewerId === user.id);
+  const ratingFromReviews = receivedReviews.length
+    ? Math.round(
+        (receivedReviews.reduce((sum, r) => sum + r.rating, 0) / receivedReviews.length) * 10,
+      ) / 10
+    : undefined;
+  const displayRating = user.rating ?? ratingFromReviews;
+  const displayCount = user.reviewsCount ?? receivedReviews.length;
 
   // Derived only from rows the user owns, so an account that has sold nothing
   // shows zeros rather than placeholder figures.
@@ -114,7 +123,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const tabs: { id: Tab; label: string; count: number; Icon: React.ElementType }[] = [
     { id: 'listings', label: 'My listings', count: myListings.length, Icon: Package },
     { id: 'saved', label: 'Saved', count: savedListings.length, Icon: Heart },
-    { id: 'reviews', label: 'Reviews', count: myReviews.length, Icon: Star },
+    { id: 'reviews', label: 'Reviews', count: receivedReviews.length + givenReviews.length, Icon: Star },
   ];
 
   return (
@@ -145,14 +154,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
             {user.neighborhood || 'Location not set'}
             {formatYear(user.joinedDate) && <> · Member since {formatYear(user.joinedDate)}</>}
           </p>
-          {user.rating !== undefined && (
+          {displayRating !== undefined && (
             <p className="mt-1.5 flex items-center gap-1.5 text-sm font-semibold">
               <Star className="w-4 h-4 fill-mustard text-mustard" aria-hidden="true" />
-              <span className="text-ink">{user.rating}</span>
-              <span className="font-normal text-ink-soft">({user.reviewsCount ?? 0} reviews)</span>
+              <span className="text-ink">{displayRating}</span>
+              <span className="font-normal text-ink-soft">({displayCount} {displayCount === 1 ? 'review' : 'reviews'})</span>
             </p>
           )}
-          {user.rating === undefined && (
+          {displayRating === undefined && givenReviews.length > 0 && (
+            <p className="mt-1.5 text-sm text-ink-soft">
+              You have written {givenReviews.length} {givenReviews.length === 1 ? 'review' : 'reviews'}.
+            </p>
+          )}
+          {displayRating === undefined && givenReviews.length === 0 && (
             <p className="mt-1.5 text-sm text-ink-soft">No reviews yet.</p>
           )}
           {user.bio && (
@@ -351,42 +365,72 @@ export const Dashboard: React.FC<DashboardProps> = ({
         )}
 
         {activeTab === 'reviews' && (
-          <div className="animate-fade-in">
-            {myReviews.length === 0 ? (
+          <div className="animate-fade-in space-y-8">
+            {receivedReviews.length === 0 && givenReviews.length === 0 ? (
               <Empty
                 Icon={Star}
                 title="No reviews yet"
-                text="Finish a handover to receive your first review."
+                text="Finish a handover, then you and the other person can each leave a review."
               />
             ) : (
-              <ul className="divide-y divide-line rounded-xl bg-card overflow-hidden" role="list" aria-label="Your reviews">
-                {myReviews.map((rev) => (
-                  <li key={rev.id} className="py-5 px-4 flex gap-4 hover:bg-paper/50 transition-colors">
-                    <img
-                      src={rev.reviewerAvatar}
-                      alt=""
-                      className="w-11 h-11 rounded-full object-cover shrink-0"
-                      aria-hidden="true"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="text-sm font-semibold text-ink">{rev.reviewerName}</div>
-                        <div className="flex gap-0.5" aria-label={`${rev.rating} out of 5 stars`}>
-                          {[1, 2, 3, 4, 5].map((n) => (
-                            <Star
-                              key={n}
-                              className={`w-3.5 h-3.5 ${n <= rev.rating ? 'fill-mustard text-mustard' : 'text-line'}`}
-                              aria-hidden="true"
-                            />
-                          ))}
-                        </div>
-                      </div>
-                      <div className="text-xs text-ink-soft mt-0.5">{rev.itemTitle} · {formatRelative(rev.createdAt)}</div>
-                      <p className="mt-2 text-sm leading-relaxed text-ink">{rev.comment}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+              <>
+                {receivedReviews.length > 0 && (
+                  <section>
+                    <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-ink-soft mb-3">From neighbors</h3>
+                    <ul className="divide-y divide-line rounded-xl bg-card overflow-hidden" role="list" aria-label="Reviews about you">
+                      {receivedReviews.map((rev) => (
+                        <li key={rev.id} className="py-5 px-4 flex gap-4 hover:bg-paper/50 transition-colors">
+                          <Avatar url={rev.reviewerAvatar} name={rev.reviewerName} className="w-11 h-11 rounded-full shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="text-sm font-semibold text-ink">{rev.reviewerName}</div>
+                              <div className="flex gap-0.5" aria-label={`${rev.rating} out of 5 stars`}>
+                                {[1, 2, 3, 4, 5].map((n) => (
+                                  <Star
+                                    key={n}
+                                    className={`w-3.5 h-3.5 ${n <= rev.rating ? 'fill-mustard text-mustard' : 'text-line'}`}
+                                    aria-hidden="true"
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                            <div className="text-xs text-ink-soft mt-0.5">{rev.itemTitle} · {formatRelative(rev.createdAt)}</div>
+                            {rev.comment ? <p className="mt-2 text-sm leading-relaxed text-ink">{rev.comment}</p> : null}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+                {givenReviews.length > 0 && (
+                  <section>
+                    <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-ink-soft mb-3">Reviews you wrote</h3>
+                    <ul className="divide-y divide-line rounded-xl bg-card overflow-hidden" role="list" aria-label="Reviews you wrote">
+                      {givenReviews.map((rev) => (
+                        <li key={rev.id} className="py-5 px-4 flex gap-4 hover:bg-paper/50 transition-colors">
+                          <Avatar url={rev.targetAvatar} name={rev.targetName} className="w-11 h-11 rounded-full shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="text-sm font-semibold text-ink">{rev.targetName}</div>
+                              <div className="flex gap-0.5" aria-label={`${rev.rating} out of 5 stars`}>
+                                {[1, 2, 3, 4, 5].map((n) => (
+                                  <Star
+                                    key={n}
+                                    className={`w-3.5 h-3.5 ${n <= rev.rating ? 'fill-mustard text-mustard' : 'text-line'}`}
+                                    aria-hidden="true"
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                            <div className="text-xs text-ink-soft mt-0.5">{rev.itemTitle} · {formatRelative(rev.createdAt)}</div>
+                            {rev.comment ? <p className="mt-2 text-sm leading-relaxed text-ink">{rev.comment}</p> : null}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+              </>
             )}
           </div>
         )}

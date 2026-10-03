@@ -68,8 +68,10 @@ export interface Review {
   reviewerId: string;
   reviewerName: string;
   reviewerAvatar: string;
-  targetUserId: string;
-  rating: number;
+    targetUserId: string;
+    targetName: string;
+    targetAvatar: string;
+    rating: number;
   comment: string;
   createdAt: string;
   itemTitle: string;

@@ -190,7 +190,7 @@ app.post(
 );
 
 app.post('/api/auth/logout', authenticate, (req, res) => {
-  audit.auth.success((req as any).user.id, 'logout');
+  audit.auth.success(requireUser(req).id, 'logout');
   res.json({ success: true });
 });
 
@@ -235,29 +235,21 @@ app.get(
   asyncHandler(async (req, res) => {
     const user = requireUser(req);
 
-    const [{ data, error }, { data: received, error: reviewsError }] = await Promise.all([
-      supabase
-        .from('profiles')
-        .select('id, username, avatar_url, bio, location, lat, lng, created_at')
-        .eq('id', user.id)
-        .maybeSingle(),
-      supabase.from('reviews').select('rating').eq('target_user_id', user.id).limit(500),
-    ]);
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, username, avatar_url, bio, location, lat, lng, created_at')
+      .eq('id', user.id)
+      .maybeSingle();
 
     if (error) throw AppError.internal('Could not load profile');
-    // Ratings are an enhancement: a deployment without migration 009 still serves the profile.
-    if (reviewsError && !notInstalled(reviewsError)) audit.warn('profile_ratings_load_failed', { userId: user.id });
 
-    const ratings = (received ?? []).map((row) => Number(row.rating)).filter(Number.isFinite);
-    const rating = ratings.length
-      ? Math.round((ratings.reduce((sum, value) => sum + value, 0) / ratings.length) * 10) / 10
-      : undefined;
-
+    const reviews = await loadReviewsFor(user.id);
     res.json({
       user: {
         ...(data ?? { id: user.id, email: user.email }),
-        ...(rating !== undefined ? { rating, reviewsCount: ratings.length } : {}),
+        ...ratingsFromReviews(reviews, user.id),
       },
+      reviews,
     });
   }),
 );
@@ -278,7 +270,8 @@ app.patch(
 
     if (error) throw AppError.badRequest('Could not update profile');
     audit.info('profile_updated', { userId: user.id });
-    res.json({ user: data });
+    const reviews = await loadReviewsFor(user.id);
+    res.json({ user: { ...data, ...ratingsFromReviews(reviews, user.id) }, reviews });
   }),
 );
 
@@ -384,8 +377,9 @@ export function blurCoords<T extends Record<string, unknown>>(row: T): T {
 
 app.get(
   '/api/listings',
+  validate(listListingsQuerySchema, 'query'),
   asyncHandler(async (req, res) => {
-    const { limit, category, lat, lng, radius } = validated(req, listListingsQuerySchema);
+    const { limit, category, lat, lng, radius } = validated(req, listListingsQuerySchema, 'query');
 
     let query = supabase
       .from('listings')
@@ -634,8 +628,15 @@ async function notify(row: NotificationRow): Promise<void> {
 
 const REVIEW_COLUMNS =
   'id, conversation_id, listing_title, reviewer_id, target_user_id, rating, comment, created_at';
+const REVIEW_SELECT = `${REVIEW_COLUMNS}, reviewer:profiles!reviews_reviewer_id_fkey(username, avatar_url), target:profiles!reviews_target_user_id_fkey(username, avatar_url)`;
 
-function mapReview(row: {
+type ProfileSnippet = { username?: string | null; avatar_url?: string | null };
+
+function firstProfile(value: ProfileSnippet | ProfileSnippet[] | null | undefined): ProfileSnippet | undefined {
+  return Array.isArray(value) ? value[0] : value ?? undefined;
+}
+
+type ReviewRow = {
   id: string;
   conversation_id: string;
   listing_title: string;
@@ -644,9 +645,13 @@ function mapReview(row: {
   rating: number;
   comment: string;
   created_at: string;
-  reviewer?: { username?: string | null; avatar_url?: string | null } | { username?: string | null; avatar_url?: string | null }[];
-}) {
-  const reviewer = Array.isArray(row.reviewer) ? row.reviewer[0] : row.reviewer;
+  reviewer?: ProfileSnippet | ProfileSnippet[];
+  target?: ProfileSnippet | ProfileSnippet[];
+};
+
+function mapReview(row: ReviewRow) {
+  const reviewer = firstProfile(row.reviewer);
+  const target = firstProfile(row.target);
   return {
     id: row.id,
     transactionId: row.conversation_id,
@@ -654,10 +659,47 @@ function mapReview(row: {
     reviewerName: reviewer?.username ?? 'A neighbor',
     reviewerAvatar: reviewer?.avatar_url ?? '',
     targetUserId: row.target_user_id,
+    targetName: target?.username ?? 'A neighbor',
+    targetAvatar: target?.avatar_url ?? '',
     rating: row.rating,
     comment: row.comment,
     createdAt: row.created_at,
     itemTitle: row.listing_title,
+  };
+}
+
+type MappedReview = ReturnType<typeof mapReview>;
+
+/** Reviews this member wrote or received. Falls back to bare columns if the profile join is missing. */
+async function loadReviewsFor(userId: string): Promise<MappedReview[]> {
+  const run = (columns: string) =>
+    supabase
+      .from('reviews')
+      .select(columns)
+      .or(`target_user_id.eq.${userId},reviewer_id.eq.${userId}`)
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+  let { data, error } = await run(REVIEW_SELECT);
+  if (error) {
+    const retry = await run(REVIEW_COLUMNS);
+    data = retry.data;
+    error = retry.error;
+  }
+  if (error) {
+    if (!notInstalled(error)) audit.warn('reviews_load_failed', { userId, code: error.code });
+    return [];
+  }
+  return ((data ?? []) as unknown as ReviewRow[]).map(mapReview);
+}
+
+function ratingsFromReviews(reviews: MappedReview[], userId: string): { rating?: number; reviewsCount?: number } {
+  const received = reviews.filter((row) => row.targetUserId === userId);
+  if (!received.length) return {};
+  const sum = received.reduce((total, row) => total + row.rating, 0);
+  return {
+    rating: Math.round((sum / received.length) * 10) / 10,
+    reviewsCount: received.length,
   };
 }
 
@@ -1068,17 +1110,8 @@ app.get(
   asyncHandler(async (req, res) => {
     const user = requireUser(req);
 
-    const { data, error } = await supabase
-      .from('reviews')
-      .select(
-        `${REVIEW_COLUMNS}, reviewer:profiles!reviews_reviewer_id_fkey(username, avatar_url)`,
-      )
-      .or(`target_user_id.eq.${user.id},reviewer_id.eq.${user.id}`)
-      .order('created_at', { ascending: false })
-      .limit(100);
-
-    if (error) throw notInstalled(error) ?? AppError.internal('Could not load reviews');
-    res.json((data ?? []).map(mapReview));
+    const reviews = await loadReviewsFor(user.id);
+    res.json(reviews);
   }),
 );
 

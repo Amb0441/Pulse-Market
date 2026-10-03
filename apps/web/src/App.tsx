@@ -21,7 +21,7 @@ import { getToken, api, type ApiListing } from './lib/api';
 import { useRealtimeSync } from './lib/useRealtimeSync';
 import { toListing } from './lib/listing';
 import { notifyError } from './stores/useToasts';
-import { distanceKm } from './lib/geo';
+import { distanceKm, FEED_FETCH_RADIUS_KM } from './lib/geo';
 import { Listing, UserProfile, ChatThread, Review, AppNotification, ItemStatus } from './types';
 
 /**
@@ -58,12 +58,13 @@ export default function App() {
   useRealtimeSync(!!user);
 
   /**
-   * Narrowed server-side by the viewer's pin and radius; without a pin it returns the newest listings.
+   * Fetched in a wide box around the pin so farther listings still arrive;
+   * the 1–10 km chips only group nearby vs not nearby. Without a pin, newest first.
    */
   const hasPin = user?.lat !== undefined && user?.lng !== undefined;
   const listingsQuery = useListings(
     hasPin
-      ? { radius: selectedRadiusKm, lat: user.lat, lng: user.lng }
+      ? { radius: FEED_FETCH_RADIUS_KM, lat: user.lat, lng: user.lng, limit: 100 }
       : undefined,
   );
   const { data: fetchedListings, isLoading, isError, error: listingsError, refetch } =
@@ -299,6 +300,7 @@ export default function App() {
             currentUserId={user.id}
             selectedRadiusKm={selectedRadiusKm}
             setSelectedRadiusKm={setSelectedRadiusKm}
+            hasPin={hasPin}
             theme={theme}
           />
         </div>

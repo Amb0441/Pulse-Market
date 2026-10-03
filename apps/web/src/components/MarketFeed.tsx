@@ -24,6 +24,8 @@ interface MarketFeedProps {
   currentUserId?: string;
   selectedRadiusKm: number;
   setSelectedRadiusKm: (r: number) => void;
+  /** When the viewer has a pin, listings split into within vs outside the selected radius. */
+  hasPin?: boolean;
   theme: 'dark' | 'light';
 }
 
@@ -54,6 +56,7 @@ export const MarketFeed: React.FC<MarketFeedProps> = ({
   currentUserId,
   selectedRadiusKm,
   setSelectedRadiusKm,
+  hasPin = false,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<Category>('All');
@@ -66,10 +69,7 @@ export const MarketFeed: React.FC<MarketFeedProps> = ({
         const q = searchQuery.toLowerCase();
         const matchesSearch = item.title.toLowerCase().includes(q) || item.description.toLowerCase().includes(q);
         const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
-        // A listing with no computed distance is kept, not hidden: `undefined <= radius`
-        // is false, and the header counts these separately.
-        const matchesRadius = item.distanceKm === undefined || item.distanceKm <= selectedRadiusKm;
-        return matchesSearch && matchesCategory && matchesRadius;
+        return matchesSearch && matchesCategory;
       })
       .sort((a, b) => {
         if (sortBy === 'nearest') {
@@ -89,18 +89,25 @@ export const MarketFeed: React.FC<MarketFeedProps> = ({
         if (Number.isNaN(bt)) return -1;
         return bt - at;
       });
-  }, [listings, searchQuery, selectedCategory, selectedRadiusKm, sortBy]);
+  }, [listings, searchQuery, selectedCategory, sortBy]);
 
-  /**
-   * "Within R km" counts only listings with a known distance; unpinned ones are reported on their own line.
-   */
-  const inRangeCount = useMemo(
-    () => filteredListings.filter((item) => item.distanceKm !== undefined).length,
-    [filteredListings],
+  const withinListings = useMemo(
+    () =>
+      hasPin
+        ? filteredListings.filter(
+            (item) => item.distanceKm !== undefined && item.distanceKm <= selectedRadiusKm,
+          )
+        : filteredListings,
+    [filteredListings, hasPin, selectedRadiusKm],
   );
-  const unpinnedCount = useMemo(
-    () => filteredListings.filter((item) => item.distanceKm === undefined).length,
-    [filteredListings],
+  const fartherListings = useMemo(
+    () =>
+      hasPin
+        ? filteredListings.filter(
+            (item) => item.distanceKm === undefined || item.distanceKm > selectedRadiusKm,
+          )
+        : [],
+    [filteredListings, hasPin, selectedRadiusKm],
   );
 
   const hasActiveFilters = selectedCategory !== 'All' || searchQuery;
@@ -116,11 +123,23 @@ export const MarketFeed: React.FC<MarketFeedProps> = ({
         <div>
           <h1 className="font-display text-2xl sm:text-4xl font-bold text-ink">Around you</h1>
           <p className="mt-1 text-sm text-ink-soft">
-            {inRangeCount === 0
-              ? `No items within ${selectedRadiusKm} km`
-              : `${inRangeCount} ${inRangeCount === 1 ? 'item' : 'items'} within ${selectedRadiusKm} km`}
-            {unpinnedCount > 0 && (
-              <span className="text-clay ml-1">· {unpinnedCount} not pinned yet</span>
+            {hasPin ? (
+              <>
+                {withinListings.length === 0
+                  ? `No items within ${selectedRadiusKm} km`
+                  : `${withinListings.length} ${withinListings.length === 1 ? 'item' : 'items'} within ${selectedRadiusKm} km`}
+                {fartherListings.length > 0 && (
+                  <span className="text-clay ml-1">
+                    · {fartherListings.length} {fartherListings.length === 1 ? 'item' : 'items'} not within {selectedRadiusKm} km
+                  </span>
+                )}
+              </>
+            ) : (
+              <>
+                {filteredListings.length === 0
+                  ? 'No items yet'
+                  : `${filteredListings.length} ${filteredListings.length === 1 ? 'item' : 'items'}`}
+              </>
             )}
             {searchQuery && <span className="text-clay ml-1">· "{searchQuery}"</span>}
             {selectedCategory !== 'All' && <span className="text-clay ml-1">· {selectedCategory}</span>}
@@ -261,7 +280,7 @@ export const MarketFeed: React.FC<MarketFeedProps> = ({
           </h3>
           <p className="mt-1 text-sm text-ink-soft max-w-xs mx-auto">
             {hasActiveFilters
-              ? 'Try widening the radius or clearing your filters.'
+              ? 'Try a different search or clearing your filters.'
               : 'Nothing has been listed in this area yet. Be the first to post something.'}
           </p>
           {hasActiveFilters ? (
@@ -283,110 +302,181 @@ export const MarketFeed: React.FC<MarketFeedProps> = ({
           ) : null}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10" role="list" aria-label="Marketplace listings">
-          {filteredListings.map((item, i) => {
-            const sold = item.status === 'sold';
-            // Saved state comes from the saved set; the listing row has none.
-            const itemIsSaved = savedListingIds.includes(item.id);
-            return (
-              <article
-                key={item.id}
-                onClick={() => onSelectListing(item)}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectListing(item); } }}
-                tabIndex={0}
-                role="listitem"
-                style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
-                className="group cursor-pointer animate-rise hover-lift active-scale touch-manipulation"
-                aria-label={`${item.title}, ${formatPrice(item.price)}${formatDistance(item.distanceKm) ? `, ${formatDistance(item.distanceKm)}` : ''}${sold ? ', sold' : ''}`}
-              >
-                <div className="relative aspect-4/3 rounded-xl overflow-hidden bg-sand">
-                  <ListingImage
-                    images={item.images}
-                    alt=""
-                    className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${sold ? 'grayscale opacity-70' : ''}`}
-                  />
-
-                {item.sellerId !== currentUserId && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      onToggleSave(item.id);
-                    }}
-                    aria-label={itemIsSaved ? 'Remove from saved' : 'Save item'}
-                    aria-pressed={itemIsSaved}
-                    className={`absolute top-3 right-3 w-9 h-9 rounded-full grid place-items-center transition-smooth touch-manipulation focus-ring ${
-                      itemIsSaved ? 'bg-clay text-white shadow-md' : 'bg-card/90 text-ink hover:bg-card'
-                    }`}
-                  >
-                    <Heart className={`w-4 h-4 ${itemIsSaved ? 'fill-current' : ''}`} aria-hidden="true" />
-                  </button>
-                )}
-
-                  {item.status !== 'active' && (
-                    <span
-                      className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                        sold ? 'bg-ink text-paper' : 'bg-mustard text-ink'
-                      }`}
-                      aria-label={`Status: ${item.status}`}
-                    >
-                      {item.status}
-                    </span>
-                  )}
-
-                  {(item.activeViewers ?? 0) > 0 && item.status === 'active' && (
-                    <span className="absolute bottom-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card/95 text-[11px] font-semibold" aria-label={`${item.activeViewers} people viewing`}>
-                      <Eye className="w-3 h-3 text-clay" aria-hidden="true" />
-                      {item.activeViewers} {item.activeViewers === 1 ? 'viewer' : 'viewers'}
-                    </span>
-                  )}
-                </div>
-
-                <div className="pt-3.5">
-                  <div className="flex items-baseline justify-between gap-3">
-                    <h3 className="font-semibold text-[15px] leading-snug line-clamp-1 group-hover:text-clay transition-colors text-ink">
-                      {item.title}
-                    </h3>
-                    <div className="shrink-0 flex items-baseline gap-1.5">
-                      {item.originalPrice && (
-                        <span className="text-xs text-ink-soft line-through">{formatPrice(item.originalPrice)}</span>
-                      )}
-                      <span className="font-display text-lg font-bold text-ink">
-                        {formatPrice(item.price)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <p className="mt-1 text-sm text-ink-soft line-clamp-2">{item.description}</p>
-
-                  <div className="mt-3 flex items-center justify-between text-xs text-ink-soft">
-                    <span className="flex items-center gap-2 min-w-0">
-                      <Avatar
-                        url={item.sellerAvatar}
-                        name={item.sellerName}
-                        className="w-5 h-5 rounded-full shrink-0"
-                      />
-                      <span className="truncate font-medium text-ink">{item.sellerName}</span>
-                      {item.createdAt && (
-                        <>
-                          <span aria-hidden="true">·</span>
-                          <time dateTime={item.createdAt} className="text-ink-muted">{formatRelative(item.createdAt)}</time>
-                        </>
-                      )}
-                    </span>
-                    {formatDistance(item.distanceKm) && (
-                      <span className="shrink-0 flex items-center gap-1 font-semibold text-moss">
-                        <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
-                        {formatDistance(item.distanceKm)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </article>
-            );
-          })}
+        <div className="space-y-10">
+          {hasPin ? (
+            <>
+              {withinListings.length > 0 && (
+                <ListingGrid
+                  title={`Within ${selectedRadiusKm} km`}
+                  label="Listings within range"
+                  items={withinListings}
+                  savedListingIds={savedListingIds}
+                  currentUserId={currentUserId}
+                  onSelectListing={onSelectListing}
+                  onToggleSave={onToggleSave}
+                  farther={false}
+                />
+              )}
+              {fartherListings.length > 0 && (
+                <ListingGrid
+                  title={`Not within ${selectedRadiusKm} km`}
+                  subtitle="These listings are farther than your selected radius."
+                  label="Listings outside range"
+                  items={fartherListings}
+                  savedListingIds={savedListingIds}
+                  currentUserId={currentUserId}
+                  onSelectListing={onSelectListing}
+                  onToggleSave={onToggleSave}
+                  farther
+                />
+              )}
+            </>
+          ) : (
+            <ListingGrid
+              label="Marketplace listings"
+              items={filteredListings}
+              savedListingIds={savedListingIds}
+              currentUserId={currentUserId}
+              onSelectListing={onSelectListing}
+              onToggleSave={onToggleSave}
+              farther={false}
+            />
+          )}
         </div>
       )}
     </div>
   );
 };
+
+const ListingGrid: React.FC<{
+  title?: string;
+  subtitle?: string;
+  label: string;
+  items: Listing[];
+  savedListingIds: string[];
+  currentUserId?: string;
+  onSelectListing: (listing: Listing) => void;
+  onToggleSave: (listingId: string) => void;
+  farther: boolean;
+}> = ({
+  title,
+  subtitle,
+  label,
+  items,
+  savedListingIds,
+  currentUserId,
+  onSelectListing,
+  onToggleSave,
+  farther,
+}) => (
+  <section>
+    {title && (
+      <div className="mb-4">
+        <h2 className="font-display text-lg sm:text-xl font-bold text-ink">{title}</h2>
+        {subtitle && <p className="mt-1 text-sm text-ink-soft">{subtitle}</p>}
+      </div>
+    )}
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10" role="list" aria-label={label}>
+      {items.map((item, i) => {
+        const sold = item.status === 'sold';
+        const itemIsSaved = savedListingIds.includes(item.id);
+        return (
+          <article
+            key={item.id}
+            onClick={() => onSelectListing(item)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectListing(item); } }}
+            tabIndex={0}
+            role="listitem"
+            style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
+            className="group cursor-pointer animate-rise hover-lift active-scale touch-manipulation"
+            aria-label={`${item.title}, ${formatPrice(item.price)}${formatDistance(item.distanceKm) ? `, ${formatDistance(item.distanceKm)}` : ''}${sold ? ', sold' : ''}`}
+          >
+            <div className="relative aspect-4/3 rounded-xl overflow-hidden bg-sand">
+              <ListingImage
+                images={item.images}
+                alt=""
+                className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${sold ? 'grayscale opacity-70' : ''}`}
+              />
+
+              {item.sellerId !== currentUserId && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    onToggleSave(item.id);
+                  }}
+                  aria-label={itemIsSaved ? 'Remove from saved' : 'Save item'}
+                  aria-pressed={itemIsSaved}
+                  className={`absolute top-3 right-3 w-9 h-9 rounded-full grid place-items-center transition-smooth touch-manipulation focus-ring ${
+                    itemIsSaved ? 'bg-clay text-white shadow-md' : 'bg-card/90 text-ink hover:bg-card'
+                  }`}
+                >
+                  <Heart className={`w-4 h-4 ${itemIsSaved ? 'fill-current' : ''}`} aria-hidden="true" />
+                </button>
+              )}
+
+              {item.status !== 'active' && (
+                <span
+                  className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                    sold ? 'bg-ink text-paper' : 'bg-mustard text-ink'
+                  }`}
+                  aria-label={`Status: ${item.status}`}
+                >
+                  {item.status}
+                </span>
+              )}
+
+              {(item.activeViewers ?? 0) > 0 && item.status === 'active' && (
+                <span className="absolute bottom-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card/95 text-[11px] font-semibold" aria-label={`${item.activeViewers} people viewing`}>
+                  <Eye className="w-3 h-3 text-clay" aria-hidden="true" />
+                  {item.activeViewers} {item.activeViewers === 1 ? 'viewer' : 'viewers'}
+                </span>
+              )}
+            </div>
+
+            <div className="pt-3.5">
+              <div className="flex items-baseline justify-between gap-3">
+                <h3 className="font-semibold text-[15px] leading-snug line-clamp-1 group-hover:text-clay transition-colors text-ink">
+                  {item.title}
+                </h3>
+                <div className="shrink-0 flex items-baseline gap-1.5">
+                  {item.originalPrice && (
+                    <span className="text-xs text-ink-soft line-through">{formatPrice(item.originalPrice)}</span>
+                  )}
+                  <span className="font-display text-lg font-bold text-ink">
+                    {formatPrice(item.price)}
+                  </span>
+                </div>
+              </div>
+
+              <p className="mt-1 text-sm text-ink-soft line-clamp-2">{item.description}</p>
+
+              <div className="mt-3 flex items-center justify-between text-xs text-ink-soft">
+                <span className="flex items-center gap-2 min-w-0">
+                  <Avatar
+                    url={item.sellerAvatar}
+                    name={item.sellerName}
+                    className="w-5 h-5 rounded-full shrink-0"
+                  />
+                  <span className="truncate font-medium text-ink">{item.sellerName}</span>
+                  {item.createdAt && (
+                    <>
+                      <span aria-hidden="true">·</span>
+                      <time dateTime={item.createdAt} className="text-ink-muted">{formatRelative(item.createdAt)}</time>
+                    </>
+                  )}
+                </span>
+                {formatDistance(item.distanceKm) && (
+                  <span className={`shrink-0 flex items-center gap-1 font-semibold ${farther ? 'text-clay' : 'text-moss'}`}>
+                    <MapPin className="w-3.5 h-3.5" aria-hidden="true" />
+                    {formatDistance(item.distanceKm)}
+                  </span>
+                )}
+              </div>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  </section>
+);
