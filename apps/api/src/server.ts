@@ -50,7 +50,15 @@ app.disable('x-powered-by');
 app.use(securityHeaders());
 app.use(devHeaderOverrides);
 app.use(corsMiddleware());
-app.use(express.json({ limit: '1mb' }));
+// GET/HEAD/OPTIONS never carry a JSON body. Parsing them as JSON 400s a
+// conversation list when a client (or a replayed refresh) sends Content-Type.
+const jsonParser = express.json({ limit: '1mb' });
+app.use((req, res, next) => {
+  if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
+    return next();
+  }
+  jsonParser(req, res, next);
+});
 app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 app.use(globalLimiter);
 
@@ -568,15 +576,6 @@ function firstImage(images: unknown): string {
 }
 
 /**
- * Collapses a possibly-array relation to a single row: without generated DB
- * types supabase-js types to-one relations as arrays, so this avoids a cast.
- */
-function one<T>(value: T | T[] | null | undefined): T | null {
-  if (!value) return null;
-  return Array.isArray(value) ? (value[0] ?? null) : value;
-}
-
-/**
  * Loads a conversation and enforces the participant rule for every
  * `/api/chats/:id` route; a missing row and a non-participant both return 404.
  */
@@ -710,35 +709,66 @@ app.get(
   asyncHandler(async (req, res) => {
     const user = requireUser(req);
 
+    // Nested resource embeds 400 when a FK hint does not match the live schema.
+    // Columns first, then listings/profiles/messages in parallel, so one bad
+    // embed cannot take down the inbox.
     const { data: conversations, error } = await supabase
       .from('conversations')
-      .select(
-        `id, listing_id, buyer_id, seller_id, last_message_at,
-         listings(id, title, price, status, images),
-         buyer:profiles!conversations_buyer_id_fkey(id, username, avatar_url),
-         seller:profiles!conversations_seller_id_fkey(id, username, avatar_url)`,
-      )
+      .select('id, listing_id, buyer_id, seller_id, last_message_at')
       .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
-      .order('last_message_at', { ascending: false });
+      .order('last_message_at', { ascending: false, nullsFirst: false });
 
-    if (error) throw AppError.internal('Could not load conversations');
+    if (error) {
+      audit.warn('conversations_load_failed', {
+        userId: user.id,
+        code: error.code,
+        message: error.message,
+      });
+      throw notInstalled(error) ?? AppError.internal('Could not load conversations');
+    }
     if (!conversations || conversations.length === 0) return res.json([]);
 
-    // One query for all messages rather than one per thread, bounded by the
-    // messages this user is party to; fetch last-message-only if threads grow.
-    const { data: messages, error: messagesError } = await supabase
-      .from('chat_messages')
-      .select('id, conversation_id, sender_id, body, read_at, created_at')
-      .in(
-        'conversation_id',
-        conversations.map((c) => c.id),
-      )
-      .order('created_at', { ascending: true });
+    const listingIds = [...new Set(conversations.map((c) => c.listing_id).filter(Boolean))];
+    const profileIds = [
+      ...new Set(conversations.flatMap((c) => [c.buyer_id, c.seller_id]).filter(Boolean)),
+    ];
+    const conversationIds = conversations.map((c) => c.id).filter(Boolean);
 
-    if (messagesError) throw AppError.internal('Could not load messages');
+    const [{ data: listingRows }, { data: profileRows }, { data: messages, error: messagesError }] =
+      await Promise.all([
+        listingIds.length
+          ? supabase.from('listings').select('id, title, price, status, images').in('id', listingIds)
+          : Promise.resolve({ data: [] as { id: string; title: string; price: number; status: string; images: unknown }[] }),
+        profileIds.length
+          ? supabase.from('profiles').select('id, username, avatar_url').in('id', profileIds)
+          : Promise.resolve({ data: [] as { id: string; username: string | null; avatar_url: string | null }[] }),
+        conversationIds.length
+          ? supabase
+              .from('chat_messages')
+              .select('id, conversation_id, sender_id, body, read_at, created_at')
+              .in('conversation_id', conversationIds)
+              .order('created_at', { ascending: true })
+          : Promise.resolve({ data: [] as never[], error: null }),
+      ]);
 
-    const grouped = new Map<string, typeof messages>();
+    if (messagesError) {
+      audit.warn('chat_messages_load_failed', {
+        userId: user.id,
+        code: messagesError.code,
+        message: messagesError.message,
+      });
+      throw AppError.internal('Could not load messages');
+    }
+
+    const listingsById = new Map((listingRows ?? []).map((row) => [row.id, row]));
+    const profilesById = new Map((profileRows ?? []).map((row) => [row.id, row]));
+
+    const grouped = new Map<
+      string,
+      { id: string; conversation_id: string; sender_id: string; body: string; read_at: string | null; created_at: string }[]
+    >();
     for (const m of messages ?? []) {
+      if (!m?.conversation_id) continue;
       const list = grouped.get(m.conversation_id) ?? [];
       list.push(m);
       grouped.set(m.conversation_id, list);
@@ -748,9 +778,9 @@ app.get(
       conversations.map((c) => {
         const thread = grouped.get(c.id) ?? [];
         const last = lastMessage(thread);
-        const listing = one(c.listings);
-        const buyer = one(c.buyer);
-        const seller = one(c.seller);
+        const listing = listingsById.get(c.listing_id);
+        const buyer = profilesById.get(c.buyer_id);
+        const seller = profilesById.get(c.seller_id);
         return {
           id: c.id,
           listingId: c.listing_id,
@@ -786,6 +816,7 @@ app.post(
   asyncHandler(async (req, res) => {
     const user = requireUser(req);
     const { listingId } = req.body as { listingId: string };
+    await ensureProfile(user);
 
     const { data: listing, error } = await supabase
       .from('listings')
@@ -808,7 +839,15 @@ app.post(
       .select('id, listing_id, buyer_id, seller_id, created_at, last_message_at')
       .single();
 
-    if (upsertError) throw AppError.badRequest('Could not start conversation');
+    if (upsertError) {
+      audit.warn('conversation_start_failed', {
+        userId: user.id,
+        listingId,
+        code: upsertError.code,
+        message: upsertError.message,
+      });
+      throw AppError.internal('Could not start conversation');
+    }
     audit.info('conversation_started', {
       userId: user.id,
       conversationId: conversation.id,

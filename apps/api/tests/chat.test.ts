@@ -117,6 +117,14 @@ describe('chat: last message', () => {
   test('an empty thread has no last message', () => {
     expect(lastMessage([])).toBeNull();
   });
+
+  test('skips rows with no timestamp instead of throwing', () => {
+    const mixed = [
+      { sender_id: BUYER, read_at: null, created_at: '' },
+      { sender_id: SELLER, read_at: null, created_at: '2026-01-01T00:09:00Z', body: 'hi' },
+    ];
+    expect(lastMessage(mixed)?.created_at).toBe('2026-01-01T00:09:00Z');
+  });
 });
 
 // --- HTTP surface -----------------------------------------------------------
@@ -148,6 +156,13 @@ const post = (path: string, body: unknown, auth = true) =>
 describe('chat API: authentication is required', () => {
   test('listing conversations requires a token', async () => {
     const res = await fetch(`${base}/api/chats`);
+    expect(res.status).toBe(401);
+  });
+
+  test('a GET with a JSON content-type header is not treated as a body', async () => {
+    const res = await fetch(`${base}/api/chats`, {
+      headers: { 'Content-Type': 'application/json' },
+    });
     expect(res.status).toBe(401);
   });
 

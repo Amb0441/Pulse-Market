@@ -66,8 +66,11 @@ export function unreadCount(messages: MessageLike[], userId: string): number {
  * Most recent message, or null when empty; compares parsed time, not array order.
  */
 export function lastMessage<T extends MessageLike>(messages: T[]): T | null {
-  if (messages.length === 0) return null;
-  return messages.reduce((latest, current) =>
+  const rows = messages.filter(
+    (m): m is T => Boolean(m) && typeof m.created_at === 'string' && m.created_at.length > 0,
+  );
+  if (rows.length === 0) return null;
+  return rows.reduce((latest, current) =>
     Date.parse(current.created_at) > Date.parse(latest.created_at) ? current : latest,
   );
 }

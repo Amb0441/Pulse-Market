@@ -453,6 +453,7 @@ export const api = {
     markRead: (conversationId: string) =>
       fetchJson<{ success?: boolean }>(`/chats/${encodeURIComponent(conversationId)}/read`, {
         method: 'POST',
+        body: JSON.stringify({}),
       }),
   },
 
