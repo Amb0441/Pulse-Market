@@ -24,7 +24,7 @@ const BY_CODE: Record<string, string> = {
   IMAGE_TYPE_NOT_ALLOWED: 'That file type is not supported. Use a JPG, PNG or WebP image.',
   IMAGE_TOO_LARGE: 'That image is too large.',
   LIMIT_FILE_COUNT: 'Too many files at once.',
-  PROFILE_MISSING: 'Your account is missing a profile. Sign out and sign in again.',
+  NOT_SOLD: 'You can only review after the item is marked sold.',
   UPLOAD_REJECTED: 'Photo storage rejected that file. Try a JPG or PNG, and check Cloudinary credentials.',
   SERVICE_UNAVAILABLE: 'Photo uploads are unavailable right now. Please try again shortly.',
   MALFORMED_JSON: 'Something went wrong sending that request. Please try again.',

@@ -166,16 +166,19 @@ export default function App() {
   };
 
   const handleUpdateListingStatus = (listingId: string, status: ItemStatus) => {
-    // Invalidates the listings, my-listings and chats caches, so the feed, the
-    // seller's dashboard and the thread's status badge settle together.
-    updateListing({ id: listingId, data: { status } });
-
-    // Marking sold is the one moment to ask the seller for a review; the buyer
-    // is prompted when their thread sees the same status change.
-    if (status === 'sold') {
-      const thread = chats.find((c) => c.listingId === listingId);
-      if (thread) promptReview(thread);
-    }
+    updateListing(
+      { id: listingId, data: { status } },
+      {
+        onSuccess: () => {
+          // Wait until the row is actually `sold` in the database; prompting off
+          // the in-memory thread (still `active`) skipped the modal, and a review
+          // POST before the PATCH landed was a 400.
+          if (status !== 'sold') return;
+          const thread = chats.find((c) => c.listingId === listingId);
+          if (thread) promptReview({ ...thread, listingStatus: 'sold' });
+        },
+      },
+    );
   };
 
   const handleDeleteListing = (listingId: string) => {

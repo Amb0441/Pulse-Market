@@ -870,7 +870,7 @@ app.post(
   asyncHandler(async (req, res) => {
     const user = requireUser(req);
     const { id } = validated(req, uuidParam, 'params');
-    const { reason, details } = validated(req, createReportSchema);
+    const { reason, details } = validated(req, createReportSchema, 'body');
 
     // Resolve the listing server-side so the snapshot can't be forged, and an
     // unknown listing is a 404 rather than a row pointing at nothing.
@@ -1094,7 +1094,8 @@ app.post(
   validate(createReviewSchema),
   asyncHandler(async (req, res) => {
     const user = requireUser(req);
-    const { conversationId, rating, comment } = validated(req, createReviewSchema);
+    const { conversationId, rating, comment } = validated(req, createReviewSchema, 'body');
+    await ensureProfile(user);
     const conversation = await requireConversation(conversationId, user.id);
     const targetId = counterpartId(conversation, user.id);
 

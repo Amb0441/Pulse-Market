@@ -190,15 +190,16 @@ export function validate(schema: ZodTypeAny, source: Source = 'body') {
   return asyncHandler(async (req, _res, next) => {
     const result = await schema.parseAsync(req[source]);
     // req.query/params are getter-only in Express 5; stash under a symbol key.
+    // Body is also stashed so `validated(req, schema, 'body')` does not re-parse
+    // `req.query` (the default source) and 400 a valid POST.
     if (source === 'body') {
       req.body = result;
-    } else {
-      Object.defineProperty(req, `validated${source}`, {
-        value: result,
-        writable: true,
-        configurable: true,
-      });
     }
+    Object.defineProperty(req, `validated${source}`, {
+      value: result,
+      writable: true,
+      configurable: true,
+    });
     next();
   });
 }
