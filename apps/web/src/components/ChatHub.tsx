@@ -420,8 +420,8 @@ export const ChatHub: React.FC<ChatHubProps> = ({
     <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 sm:py-6 h-full min-h-0">
       <div className="h-full min-h-0 sm:border border-line sm:rounded-2xl overflow-hidden grid grid-cols-1 md:grid-cols-12 bg-card">
         <div className={`md:col-span-4 md:border-r border-line flex flex-col h-full min-h-0 ${mobileChatOpen ? 'max-md:invisible' : ''}`}>
-          <div className="px-5 py-4 sm:py-5 border-b border-line shrink-0">
-            <h2 className="font-display text-2xl font-bold text-ink">Messages</h2>
+          <div className="px-4 sm:px-5 py-4 border-b border-line shrink-0">
+            <h2 className="font-display text-xl sm:text-2xl font-bold text-ink">Messages</h2>
           </div>
           <ul className="flex-1 min-h-0 overflow-y-auto overscroll-none no-scrollbar" role="list" aria-label="Conversations">
             {chats.map((chat) => {

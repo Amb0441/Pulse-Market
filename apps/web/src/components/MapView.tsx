@@ -170,7 +170,7 @@ export const MapView: React.FC<MapViewProps> = ({
       <div ref={mapContainerRef} className="w-full h-full z-0" />
 
       {/* Left control panel */}
-      <aside className="absolute z-10 left-3 top-3 sm:left-5 sm:top-5 w-44 sm:w-56 bg-card border border-line rounded-xl shadow-[4px_4px_0_var(--color-line)] p-4">
+      <aside className="absolute z-10 left-3 top-3 sm:left-5 sm:top-5 w-[min(11.5rem,calc(100%-1.5rem))] sm:w-56 bg-card/95 backdrop-blur border border-line rounded-xl shadow-md sm:shadow-[4px_4px_0_var(--color-line)] p-3 sm:p-4">
         <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-ink-soft">Search radius</p>
         <div className="mt-3">
           {/* Mobile: Dropdown */}

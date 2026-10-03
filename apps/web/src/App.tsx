@@ -280,8 +280,9 @@ export default function App() {
         theme={theme}
       />
 
-      <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-[calc(4rem+env(safe-area-inset-bottom,0px))] lg:pb-0 relative no-scrollbar overscroll-none">
-        <div className={activeTab === 'feed' ? 'block' : 'hidden'}>
+      {/* Each tab is a full-height scene; only feed/profile scroll inside. */}
+      <main className="flex-1 min-h-0 relative overflow-hidden pb-[var(--mobile-nav-height)] lg:pb-0 mobile-scene">
+        <div className={activeTab === 'feed' ? 'h-full overflow-y-auto overflow-x-hidden no-scrollbar overscroll-none' : 'hidden'}>
           <MarketFeed
             listings={listings}
             isLoading={isLoading}
@@ -299,7 +300,7 @@ export default function App() {
           />
         </div>
 
-        <div className={activeTab === 'map' ? 'block h-full w-full flex' : 'hidden'}>
+        <div className={activeTab === 'map' ? 'h-full w-full flex min-h-0' : 'hidden'}>
           <MapView
             listings={listings}
             onSelectListing={(listing) => setSelectedListing(listing)}
@@ -313,7 +314,7 @@ export default function App() {
           />
         </div>
 
-        <div className={activeTab === 'chats' ? 'h-full' : 'hidden'}>
+        <div className={activeTab === 'chats' ? 'h-full min-h-0' : 'hidden'}>
           <ChatHub
             chats={chats}
             currentUserId={user.id}
@@ -328,7 +329,7 @@ export default function App() {
           />
         </div>
 
-        <div className={activeTab === 'dashboard' ? 'block' : 'hidden'}>
+        <div className={activeTab === 'dashboard' ? 'h-full overflow-y-auto overflow-x-hidden no-scrollbar overscroll-none' : 'hidden'}>
           <Dashboard
               user={user}
               listings={listings}
@@ -342,6 +343,7 @@ export default function App() {
             onSelectListing={(listing) => setSelectedListing(listing)}
             onOpenSettings={() => setIsSettingsOpen(true)}
             onOpenSellModal={() => setIsSellModalOpen(true)}
+            onSignOut={() => signOut()}
             theme={theme}
           />
         </div>
