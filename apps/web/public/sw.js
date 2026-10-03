@@ -69,6 +69,13 @@ self.addEventListener('fetch', (event) => {
   // Skip chrome-extension and other non-http(s) requests
   if (!url.protocol.startsWith('http')) return;
 
+  // Cross-origin GETs (Cloudinary photos, OSM tiles, Google Fonts) must not be
+  // intercepted. A service-worker fetch() is governed by connect-src, while the
+  // document loads those URLs under img-src / font-src. Intercepting them made
+  // connect-src block res.cloudinary.com, *.tile.openstreetmap.org and
+  // fonts.gstatic.com even though img-src/font-src already allowed them.
+  if (url.origin !== self.location.origin) return;
+
   // Handle API requests with network-first strategy
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(networkFirst(request));
@@ -186,7 +193,7 @@ async function staleWhileRevalidate(request) {
         });
     }
     return networkResponse;
-  }).catch(() => cachedResponse);
+  }).catch(() => cachedResponse ?? new Response('', { status: 504, statusText: 'Offline' }));
 
   return cachedResponse || fetchPromise;
 }
