@@ -176,18 +176,20 @@ export const ChatHub: React.FC<ChatHubProps> = ({
 
   if (!chats.length && !activeChat) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-24 text-center animate-fade-in">
-        <div className="w-16 h-16 mx-auto rounded-2xl bg-sand grid place-items-center mb-4">
-          <MessageSquare className="w-8 h-8 text-ink-soft" strokeWidth={1.5} aria-hidden="true" />
+      <div className="h-full w-full grid place-items-center px-4 text-center animate-fade-in">
+        <div>
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-sand grid place-items-center mb-4">
+            <MessageSquare className="w-8 h-8 text-ink-soft" strokeWidth={1.5} aria-hidden="true" />
+          </div>
+          <h3 className="font-display text-xl font-bold text-ink">
+            {chatsLoading ? 'Loading conversations…' : 'No conversations yet'}
+          </h3>
+          <p className="mt-1 text-sm text-ink-soft">
+            {chatsLoading
+              ? 'Your threads will appear here in a moment.'
+              : 'Message a neighbor from the feed or map to get started.'}
+          </p>
         </div>
-        <h3 className="font-display text-xl font-bold text-ink">
-          {chatsLoading ? 'Loading conversations…' : 'No conversations yet'}
-        </h3>
-        <p className="mt-1 text-sm text-ink-soft">
-          {chatsLoading
-            ? 'Your threads will appear here in a moment.'
-            : 'Message a neighbor from the feed or map to get started.'}
-        </p>
       </div>
     );
   }
@@ -235,7 +237,7 @@ export const ChatHub: React.FC<ChatHubProps> = ({
   }) => (
     <div
       ref={scrollerRef}
-      className="flex-1 min-h-0 overflow-y-auto overscroll-none no-scrollbar px-4 sm:px-5 py-4 space-y-3"
+      className="flex-1 min-h-0 overflow-y-auto overscroll-none no-scrollbar px-4 sm:px-8 lg:px-10 py-4 space-y-3"
       role="log"
       aria-live="polite"
       aria-label="Messages"
@@ -275,7 +277,7 @@ export const ChatHub: React.FC<ChatHubProps> = ({
   const Composer = ({ mobile = false }: { mobile?: boolean }) => (
     <form
       onSubmit={handleSend}
-      className={`shrink-0 px-3 sm:px-4 pt-3 border-t border-line bg-card flex items-center gap-2 ${
+      className={`shrink-0 px-3 sm:px-8 lg:px-10 pt-3 border-t border-line bg-card flex items-center gap-2 ${
         mobile ? 'safe-pb-3' : 'pb-3'
       }`}
     >
@@ -388,7 +390,7 @@ export const ChatHub: React.FC<ChatHubProps> = ({
 
   const ChatHeader = ({ back = false }: { back?: boolean }) => (
     <div
-      className={`shrink-0 px-3 sm:px-4 pb-3 border-b border-line flex items-center justify-between gap-2 bg-card ${
+      className={`shrink-0 px-3 sm:px-8 lg:px-10 pb-3 border-b border-line flex items-center justify-between gap-2 bg-card ${
         back ? 'safe-pt-header' : 'pt-3'
       }`}
     >
@@ -430,9 +432,9 @@ export const ChatHub: React.FC<ChatHubProps> = ({
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-0 sm:px-6 lg:px-8 sm:py-6 h-full min-h-0">
-      <div className="h-full min-h-0 sm:border border-line sm:rounded-2xl overflow-hidden grid grid-cols-1 md:grid-cols-12 bg-card">
-        <div className={`md:col-span-4 md:border-r border-line flex flex-col h-full min-h-0 ${mobileChatOpen ? 'max-md:invisible' : ''}`}>
+    <div className="h-full min-h-0 w-full flex flex-col">
+      <div className="flex-1 min-h-0 w-full overflow-hidden grid grid-cols-1 md:grid-cols-[minmax(17rem,22rem)_minmax(0,1fr)] bg-card border-t border-line">
+        <div className={`md:border-r border-line flex flex-col h-full min-h-0 min-w-0 ${mobileChatOpen ? 'max-md:invisible' : ''}`}>
           <div className="px-4 sm:px-5 py-4 border-b border-line shrink-0">
             <h2 className="font-display text-xl sm:text-2xl font-bold text-ink">Messages</h2>
           </div>
@@ -479,13 +481,17 @@ export const ChatHub: React.FC<ChatHubProps> = ({
           </ul>
         </div>
 
-        <div className="hidden md:flex md:col-span-8 flex-col h-full min-h-0 bg-paper">
-          {activeChat && (
+        <div className="hidden md:flex flex-col h-full min-h-0 min-w-0 bg-paper">
+          {activeChat ? (
             <>
               <ChatHeader />
-              <Messages maxW="max-w-md" scrollerRef={messagesContainerRef} />
+              <Messages maxW="max-w-[min(40rem,80%)]" scrollerRef={messagesContainerRef} />
               <Composer />
             </>
+          ) : (
+            <div className="flex-1 grid place-items-center px-6 text-center text-sm text-ink-soft">
+              Select a conversation to keep it open here.
+            </div>
           )}
         </div>
       </div>

@@ -314,7 +314,7 @@ export default function App() {
           />
         </div>
 
-        <div className={activeTab === 'chats' ? 'h-full min-h-0 flex flex-col' : 'hidden'}>
+        <div className={activeTab === 'chats' ? 'h-full w-full min-h-0 flex flex-col' : 'hidden'}>
           <ChatHub
             chats={chats}
             chatsLoading={chatsPending}
