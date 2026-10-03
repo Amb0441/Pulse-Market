@@ -58,11 +58,21 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
     L.control.zoom({ position: 'bottomright' }).addTo(map);
     mapRef.current = map;
 
+    const pinIcon = L.divIcon({
+      className: '',
+      html: '<span style="display:block;width:18px;height:18px;border-radius:50% 50% 50% 0;background:#cf4a2a;border:2px solid #fff;transform:rotate(-45deg);box-shadow:0 1px 4px rgba(0,0,0,.35)"></span>',
+      iconSize: [18, 18],
+      iconAnchor: [9, 18],
+    });
+
     const place = (latlng: LatLng) => {
       if (markerRef.current) {
         markerRef.current.setLatLng([latlng.lat, latlng.lng]);
       } else {
-        markerRef.current = L.marker([latlng.lat, latlng.lng], { draggable: true }).addTo(map);
+        markerRef.current = L.marker([latlng.lat, latlng.lng], {
+          draggable: true,
+          icon: pinIcon,
+        }).addTo(map);
         // Draggable so the pin can be nudged off a building or a road.
         markerRef.current.on('dragend', () => {
           const p = markerRef.current.getLatLng();
@@ -86,10 +96,22 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
     (map as any).__place = place;
 
     if (value) place(value);
-    setTimeout(() => map.invalidateSize(true), 50);
+
+    const resize = () => {
+      map.invalidateSize(true);
+    };
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resize) : null;
+    ro?.observe(containerRef.current);
+    const t0 = window.setTimeout(resize, 0);
+    const t1 = window.setTimeout(resize, 150);
+    const t2 = window.setTimeout(resize, 400);
     setReady(true);
 
     return () => {
+      window.clearTimeout(t0);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+      ro?.disconnect();
       map.remove();
       mapRef.current = null;
       markerRef.current = null;

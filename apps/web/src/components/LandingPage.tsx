@@ -106,12 +106,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthenticated, theme
           location: locationLabel.trim() || undefined,
         },
         {
-          onSuccess: (data) =>
-            setNotice(
-              data?.session
-                ? 'Welcome to Pulse Market. Your account is ready.'
-                : 'Account created. Email confirmation is not required \u2014 sign in to continue.',
-            ),
+          onSuccess: (data) => {
+            if (data?.session) {
+              onAuthenticated();
+              return;
+            }
+            setNotice('Account created. Sign in with the same email and password to continue.');
+          },
           onError: (err) => onFail(err, 'We could not create your account.'),
         },
       );

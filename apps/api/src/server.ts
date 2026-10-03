@@ -112,14 +112,14 @@ app.get('/api/health/details', authenticate, requireAdmin, (_req, res) => {
   asyncHandler(async (req, res) => {
     const { email, password, username, lat, lng, location } = req.body;
 
-    // Email verification is required - accounts must confirm their email before signing in
+    // Email confirmation is skipped so the new account can sign in immediately.
     const { data, error } = await supabase.auth.admin.createUser({
       email,
       password,
       // Metadata feeds the handle_new_user trigger so the pin lands on the profile
       // row atomically; `location` is the typed area label, not an address.
       user_metadata: { username, lat, lng, location },
-      email_confirm: false,
+      email_confirm: true,
     });
 
     if (error) {
@@ -134,10 +134,29 @@ app.get('/api/health/details', authenticate, requireAdmin, (_req, res) => {
 
     const user = data.user!;
 
+    const { data: signedIn, error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (signInError || !signedIn.session) {
+      audit.auth.failure(signInError?.message ?? 'no_session', 'signup_signin', {
+        email: maskEmail(email),
+      });
+      throw AppError.badRequest(
+        'Account created but we could not sign you in. Try signing in with the same email and password.',
+        'SIGNUP_SIGNIN_FAILED',
+      );
+    }
+
     audit.auth.success(user.id, 'signup');
     res.status(201).json({
       user: { id: user.id, email: user.email },
-      message: 'Check your email to verify your account before signing in',
+      session: {
+        access_token: signedIn.session.access_token,
+        refresh_token: signedIn.session.refresh_token,
+        expires_at: signedIn.session.expires_at,
+      },
     });
   }),
 );
