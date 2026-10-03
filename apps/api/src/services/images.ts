@@ -49,8 +49,9 @@ function uploadBuffer(buffer: Buffer, folder: string): Promise<StoredImage> {
       },
       (error, result) => {
         if (error || !result) return reject(error ?? new Error('Upload failed'));
+        const rawUrl = result.secure_url || result.url || '';
         resolve({
-          url: result.secure_url,
+          url: rawUrl.replace(/^http:\/\//i, 'https://'),
           public_id: result.public_id,
           width: result.width,
           height: result.height,
@@ -80,6 +81,19 @@ export async function storeImages(
       requested: files.length,
       stored: stored.length,
     });
+  }
+  if (!stored.length) {
+    const first = settled.find((r): r is PromiseRejectedResult => r.status === 'rejected');
+    const reason = first?.reason as { message?: string; http_code?: number } | undefined;
+    audit.warn('upload_failed', { userId, message: reason?.message, http_code: reason?.http_code });
+    const code = reason?.http_code;
+    if (code === 400 || code === 401 || code === 403) {
+      throw AppError.badRequest(
+        'Photo storage rejected that file. Check Cloudinary credentials and try a JPG or PNG.',
+        'UPLOAD_REJECTED',
+      );
+    }
+    throw AppError.serviceUnavailable('Photo uploads are unavailable right now. Please try again shortly.');
   }
   return stored;
 }

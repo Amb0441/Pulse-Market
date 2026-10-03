@@ -1,7 +1,7 @@
 import express from 'express';
 import { env, hasCloudinary, hasSupabase, isProd } from './config.js';
 import { audit } from './middleware/audit.js';
-import { authenticate, requireAdmin, requireUser, supabase } from './middleware/auth.js';
+import { authenticate, ensureProfile, requireAdmin, requireUser, supabase } from './middleware/auth.js';
 import { openRealtimeStream, realtimeSubscriberCount, startRealtime } from './services/realtime.js';
 import { AppError, asyncHandler, errorHandler, notFoundHandler } from './middleware/errors.js';
 import {
@@ -296,8 +296,10 @@ app.post(
     assertRealImages(files);
 
     const userId = requireUser(req).id;
+    if (!hasCloudinary) {
+      throw AppError.serviceUnavailable('Photo uploads are not configured on the server');
+    }
     const stored = await storeImages(files, userId);
-    if (!stored.length) throw AppError.internal('Upload failed');
 
     audit.info('images_uploaded', { userId, count: stored.length });
     res.status(201).json({ images: stored });
@@ -925,6 +927,7 @@ app.post(
   asyncHandler(async (req, res) => {
     const user = requireUser(req);
     const payload = req.body;
+    await ensureProfile(user);
 
     const { data, error } = await supabase
       .from('listings')
@@ -932,7 +935,28 @@ app.post(
       .select()
       .single();
 
-    if (error) throw AppError.badRequest('Could not create listing');
+    if (error) {
+      audit.warn('listing_create_failed', {
+        userId: user.id,
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+      });
+      if (error.code === '23503') {
+        throw AppError.badRequest(
+          'Your account profile is not ready yet. Sign out and sign in again, then retry.',
+          'PROFILE_MISSING',
+        );
+      }
+      if (error.code === '23514') {
+        throw AppError.badRequest(
+          'That listing did not pass a database check (category, price, or pin).',
+          'LISTING_CONSTRAINT',
+        );
+      }
+      throw AppError.badRequest('Could not create listing');
+    }
     audit.info('listing_created', { userId: user.id, listingId: data.id });
 
     void notify({

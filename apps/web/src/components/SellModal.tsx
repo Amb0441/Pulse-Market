@@ -100,12 +100,12 @@ export const SellModal: React.FC<SellModalProps> = ({ isOpen, onClose }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!title.trim()) {
+    if (!title.trim() || !price) {
       setError('Please provide a title and asking price.');
       return;
     }
-    if (!price) {
-      setError('Please provide a title and asking price.');
+    if (title.trim().length < 3) {
+      setError('Title must be at least 3 characters.');
       return;
     }
     if (parseFloat(price) < 0) {
@@ -151,6 +151,21 @@ export const SellModal: React.FC<SellModalProps> = ({ isOpen, onClose }) => {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const mime = (file.type || '').toLowerCase();
+    const okType =
+      mime === '' ||
+      mime === 'image/jpeg' ||
+      mime === 'image/jpg' ||
+      mime === 'image/pjpeg' ||
+      mime === 'image/png' ||
+      mime === 'image/x-png' ||
+      mime === 'image/webp';
+    if (!okType) {
+      setUploadError('Use a JPG, PNG or WebP photo (iPhone HEIC is not supported).');
+      e.target.value = '';
+      return;
+    }
 
     setUploadError('');
     uploadImages([file], {
@@ -263,7 +278,8 @@ export const SellModal: React.FC<SellModalProps> = ({ isOpen, onClose }) => {
               placeholder="Ergonomic office chair"
               className={field}
               required
-              autoComplete="off"
+              minLength={3}
+              maxLength={120}
               aria-required="true"
             />
           </section>

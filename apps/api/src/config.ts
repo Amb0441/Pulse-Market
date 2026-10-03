@@ -60,7 +60,11 @@ export const isProd = env.NODE_ENV === 'production';
 
 // Still check, but don't fail - also check raw env
 export const hasSupabase = !!(env.SUPABASE_URL || process.env.SUPABASE_URL) && !!(env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY);
-export const hasCloudinary = !!(env.CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME);
+export const hasCloudinary = !!(
+  (env.CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME) &&
+  (env.CLOUDINARY_API_KEY || process.env.CLOUDINARY_API_KEY) &&
+  (env.CLOUDINARY_API_SECRET || process.env.CLOUDINARY_API_SECRET)
+);
 
 const MISSING_MESSAGE =
   'Missing required credentials. See apps/api/.env.example for the full list.';

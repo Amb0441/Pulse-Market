@@ -198,8 +198,7 @@ export function useChats() {
     queryKey: ['chats'],
     queryFn: async () => toChatThreads((await api.chats.list()) as ApiConversation[]),
     enabled: !!getToken(),
-    // Polling is the only way the other party receives a message: the browser has
-    // no Supabase client, so there is no realtime subscription to ride.
+    placeholderData: keepPreviousData,
     refetchInterval: 10_000,
   });
 }
@@ -211,9 +210,38 @@ export function useStartConversation() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (listingId: string) => api.chats.start(listingId),
-    // The chat view reports failures itself; skip the global toast.
     meta: { inline: true },
-    onSuccess: () => {
+    onSuccess: (row, listingId) => {
+      const me = qc.getQueryData<UserProfile>(['auth', 'me']);
+      const listing =
+        qc.getQueriesData<Listing[]>({ queryKey: ['listings'] })
+          .flatMap(([, rows]) => rows ?? [])
+          .find((l) => l.id === listingId) ??
+        qc.getQueryData<Listing[]>(['myListings'])?.find((l) => l.id === listingId);
+
+      qc.setQueryData<ChatThread[]>(['chats'], (old) => {
+        const list = old ?? [];
+        if (list.some((t) => t.id === row.id || t.listingId === listingId)) {
+          return list;
+        }
+        const stub: ChatThread = {
+          id: row.id,
+          listingId: row.listing_id || listingId,
+          listingTitle: listing?.title ?? 'Listing',
+          listingImage: listing?.images?.[0] ?? '',
+          listingPrice: listing?.price ?? 0,
+          listingStatus: listing?.status ?? 'active',
+          buyerId: row.buyer_id,
+          buyerName: me?.name ?? 'You',
+          sellerId: row.seller_id,
+          sellerName: listing?.sellerName ?? 'Seller',
+          lastMessage: '',
+          lastMessageTime: '',
+          unreadCount: 0,
+          messages: [],
+        };
+        return [stub, ...list];
+      });
       void qc.invalidateQueries({ queryKey: ['chats'] });
     },
   });

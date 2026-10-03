@@ -8,6 +8,7 @@ import { ListingImage } from './ListingImage';
 
 interface ChatHubProps {
   chats: ChatThread[];
+  chatsLoading?: boolean;
   /** The signed-in user's real id, used to decide which messages are "mine". */
   currentUserId: string;
   onSendMessage: (chatId: string, text: string) => void;
@@ -38,6 +39,7 @@ const chatImages = (url: string): string[] => (url ? [url] : []);
 
 export const ChatHub: React.FC<ChatHubProps> = ({
   chats,
+  chatsLoading = false,
   currentUserId,
   onSendMessage,
   onMarkRead,
@@ -54,8 +56,14 @@ export const ChatHub: React.FC<ChatHubProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const mobileMessagesContainerRef = useRef<HTMLDivElement>(null);
+  const pinnedThread = useRef<ChatThread | null>(null);
 
-  const activeChat = chats.find((c) => c.id === activeChatId) || chats[0];
+  const fromList = chats.find((c) => c.id === activeChatId);
+  if (fromList) pinnedThread.current = fromList;
+  const activeChat =
+    fromList ??
+    (pinnedThread.current?.id === activeChatId ? pinnedThread.current : null) ??
+    (!activeChatId ? chats[0] : undefined);
 
   // `chats` is empty on first paint, so the initial state captured no id.
   // Adopt the newest thread once it lands; a lazy initializer would not re-run.
@@ -166,14 +174,20 @@ export const ChatHub: React.FC<ChatHubProps> = ({
     }
   };
 
-  if (!chats.length) {
+  if (!chats.length && !activeChat) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-24 text-center animate-fade-in">
         <div className="w-16 h-16 mx-auto rounded-2xl bg-sand grid place-items-center mb-4">
           <MessageSquare className="w-8 h-8 text-ink-soft" strokeWidth={1.5} aria-hidden="true" />
         </div>
-        <h3 className="font-display text-xl font-bold text-ink">No conversations yet</h3>
-        <p className="mt-1 text-sm text-ink-soft">Message a neighbor from the feed or map to get started.</p>
+        <h3 className="font-display text-xl font-bold text-ink">
+          {chatsLoading ? 'Loading conversations…' : 'No conversations yet'}
+        </h3>
+        <p className="mt-1 text-sm text-ink-soft">
+          {chatsLoading
+            ? 'Your threads will appear here in a moment.'
+            : 'Message a neighbor from the feed or map to get started.'}
+        </p>
       </div>
     );
   }
@@ -226,7 +240,7 @@ export const ChatHub: React.FC<ChatHubProps> = ({
       aria-live="polite"
       aria-label="Messages"
     >
-      {activeChat.messages.map((msg) => {
+      {activeChat?.messages.map((msg) => {
         const isMe = msg.senderId === currentUserId;
         if (msg.isSystemAction) {
           return (
@@ -333,7 +347,6 @@ export const ChatHub: React.FC<ChatHubProps> = ({
                 onClick={() => {
                   setShowThreadMenu(false);
                   onOpenReviewModal(activeChat);
-                  setMobileChatOpen(false);
                 }}
                 className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-medium text-ink hover:bg-sand transition-colors touch-manipulation text-left"
               >

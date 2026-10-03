@@ -68,6 +68,56 @@ export const requireUser = (req: Request) => {
   return user as { id: string; email: string; user_metadata?: Record<string, unknown> };
 };
 
+/**
+ * Listings FK to `profiles`. Signup should create the row via `handle_new_user`;
+ * if that trigger never ran, insert the missing profile from auth metadata.
+ */
+export async function ensureProfile(user: {
+  id: string;
+  user_metadata?: Record<string, unknown>;
+}): Promise<void> {
+  if (process.env.NODE_ENV === 'test') return;
+
+  const { data, error: readError } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (readError) {
+    audit.warn('profile_ensure_read_failed', { userId: user.id, message: readError.message });
+    throw AppError.internal('Could not load profile');
+  }
+  if (data) return;
+
+  const meta = user.user_metadata ?? {};
+  const usernameRaw = typeof meta.username === 'string' ? meta.username.trim() : '';
+  const username = usernameRaw || `user_${user.id.replace(/-/g, '').slice(0, 8)}`;
+  const lat = Number(meta.lat);
+  const lng = Number(meta.lng);
+  const location = typeof meta.location === 'string' ? meta.location.trim() : '';
+
+  const { error } = await supabase.from('profiles').insert({
+    id: user.id,
+    username,
+    lat: Number.isFinite(lat) ? lat : null,
+    lng: Number.isFinite(lng) ? lng : null,
+    location: location || null,
+  });
+
+  if (error && error.code !== '23505') {
+    audit.warn('profile_ensure_failed', {
+      userId: user.id,
+      code: error.code,
+      message: error.message,
+    });
+    throw AppError.badRequest(
+      'Your account profile is not ready yet. Sign out and sign in again, then retry.',
+      'PROFILE_MISSING',
+    );
+  }
+}
+
 export const requireAdmin = (req: Request, _res: Response, next: NextFunction) => {
   const user = (req as any).user;
   if (!user) return next(AppError.unauthorized());

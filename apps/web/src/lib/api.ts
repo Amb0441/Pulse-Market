@@ -431,7 +431,12 @@ export const api = {
      * Start or reopen the caller's thread about a listing; the server decides buyer and seller. Idempotent.
      */
     start: (listingId: string) =>
-      fetchJson<{ id: string }>('/chats', {
+      fetchJson<{
+        id: string;
+        listing_id: string;
+        buyer_id: string;
+        seller_id: string;
+      }>('/chats', {
         method: 'POST',
         body: JSON.stringify({ listingId }),
       }),

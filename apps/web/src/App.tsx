@@ -96,7 +96,7 @@ export default function App() {
 
   // Conversations are server-backed; the mutations invalidate `['chats']` and the
   // thread list re-renders from the database.
-  const { data: chats = [] } = useChats();
+  const { data: chats = [], isPending: chatsPending } = useChats();
   const { mutate: startConversation } = useStartConversation();
   const { mutate: sendMessage } = useSendMessage();
   const { mutate: markChatRead } = useMarkChatRead();
@@ -314,9 +314,10 @@ export default function App() {
           />
         </div>
 
-        <div className={activeTab === 'chats' ? 'h-full min-h-0' : 'hidden'}>
+        <div className={activeTab === 'chats' ? 'h-full min-h-0 flex flex-col' : 'hidden'}>
           <ChatHub
             chats={chats}
+            chatsLoading={chatsPending}
             currentUserId={user.id}
             onSendMessage={handleSendMessage}
             onMarkRead={handleMarkChatRead}

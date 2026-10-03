@@ -35,6 +35,15 @@ export function detectImageMime(buffer: Buffer): string | null {
   return SIGNATURES.find((s) => s.test(buffer))?.mime ?? null;
 }
 
+/** Browsers send `image/jpg` / empty type; the schema only lists canonical MIME names. */
+export function normalizeImageMime(mimetype: string | undefined): string | null {
+  const raw = (mimetype || '').trim().toLowerCase();
+  if (raw === 'image/jpeg' || raw === 'image/jpg' || raw === 'image/pjpeg') return 'image/jpeg';
+  if (raw === 'image/png' || raw === 'image/x-png') return 'image/png';
+  if (raw === 'image/webp') return 'image/webp';
+  return null;
+}
+
 const storage = multer.memoryStorage();
 
 const uploadMiddleware = multer({
@@ -49,7 +58,8 @@ const uploadMiddleware = multer({
   },
   fileFilter: (_req, file, cb) => {
     const ext = path.extname(file.originalname || '').toLowerCase();
-    if (!ALLOWED_IMAGE_MIME.has(file.mimetype)) {
+    const mime = normalizeImageMime(file.mimetype);
+    if (file.mimetype && !mime) {
       audit.warn('upload_rejected_mime', { mimetype: file.mimetype });
       return cb(new AppError(415, 'UNSUPPORTED_MEDIA_TYPE', 'Only JPEG, PNG or WebP images are allowed'));
     }
@@ -57,6 +67,7 @@ const uploadMiddleware = multer({
       audit.warn('upload_rejected_ext', { ext });
       return cb(new AppError(415, 'UNSUPPORTED_MEDIA_TYPE', 'Invalid image file extension'));
     }
+    if (mime) file.mimetype = mime;
     cb(null, true);
   },
 });
@@ -72,9 +83,11 @@ export function assertRealImages(files: Express.Multer.File[]) {
       audit.warn('upload_rejected_signature', { name: file.originalname });
       throw new AppError(415, 'INVALID_IMAGE', 'File content is not a valid image');
     }
-    if (detected !== file.mimetype) {
+    const declared = normalizeImageMime(file.mimetype) ?? file.mimetype;
+    if (declared && declared !== detected) {
       audit.warn('upload_mime_mismatch', { declared: file.mimetype, detected });
       throw new AppError(415, 'INVALID_IMAGE', 'File content does not match its type');
     }
+    file.mimetype = detected;
   }
 }
