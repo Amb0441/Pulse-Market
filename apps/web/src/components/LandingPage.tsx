@@ -12,9 +12,9 @@ interface LandingPageProps {
   theme: 'dark' | 'light';
 }
 
-/** text-base (16px) avoids iOS Safari zoom-on-focus; never use text-sm on inputs. */
+/** 16px minimum — iOS Safari zooms any focused control under 16px. */
 const inputCls =
-  'w-full h-12 pl-10 pr-4 rounded-xl border border-line bg-paper text-base text-ink placeholder:text-ink-soft/60 focus:outline-none focus:border-ink focus:ring-2 focus:ring-clay/20 transition-smooth';
+  'w-full h-12 pl-10 pr-4 rounded-xl border border-line bg-card text-[16px] leading-normal text-ink placeholder:text-ink-soft/60 focus:outline-none focus:border-ink focus:ring-2 focus:ring-clay/20 transition-smooth';
 
 /** Adds a red border to whichever field the server (or the local check) rejected. */
 const inputErrCls = 'border-rose focus:border-rose focus:ring-rose/20';
@@ -140,20 +140,27 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthenticated, theme
 
   return (
     <div className="app-height overflow-y-auto overscroll-none flex flex-col bg-paper text-ink">
-      <header className="w-full px-4 sm:px-8 h-14 sm:h-16 flex items-center justify-between border-b border-line shrink-0 bg-paper safe-top">
-        <div className="flex items-center gap-2.5 sm:gap-3">
-          <span className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-clay grid place-items-center shadow-[2px_2px_0_var(--color-ink)] shrink-0">
-            <Activity className="w-5 h-5 text-white" aria-hidden="true" strokeWidth={2.5} />
-          </span>
-          <span className="leading-none">
-            <span className="block font-display text-lg sm:text-2xl font-bold text-ink tracking-tight">Pulse Market</span>
-            <span className="hidden sm:block mt-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-soft">Neighborhood marketplace</span>
+      {/* safe-top is OUTSIDE the bar height — nesting it inside h-14 crushed the logo under the notch. */}
+      <header className="w-full shrink-0 bg-paper border-b border-line safe-top">
+        <div className="w-full px-4 sm:px-8 h-14 sm:h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <span className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-clay grid place-items-center shadow-[2px_2px_0_var(--color-ink)] shrink-0">
+              <Activity className="w-5 h-5 sm:w-6 sm:h-6 text-white" aria-hidden="true" strokeWidth={2.5} />
+            </span>
+            <span className="leading-none min-w-0">
+              <span className="block font-display text-xl sm:text-2xl font-bold text-ink tracking-tight truncate">
+                Pulse Market
+              </span>
+              <span className="hidden sm:block mt-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-soft">
+                Neighborhood marketplace
+              </span>
+            </span>
+          </div>
+          <span className="hidden md:flex items-center gap-1.5 text-xs font-semibold text-ink-soft shrink-0">
+            <MapPin className="w-3.5 h-3.5 text-clay" aria-hidden="true" />
+            Buy and sell within walking distance
           </span>
         </div>
-        <span className="hidden md:flex items-center gap-1.5 text-xs font-semibold text-ink-soft">
-          <MapPin className="w-3.5 h-3.5 text-clay" aria-hidden="true" />
-          Buy and sell within walking distance
-        </span>
       </header>
 
       <main className="flex-1 w-full max-w-6xl mx-auto lg:px-8 lg:py-10 grid grid-cols-1 lg:grid-cols-12 lg:gap-10 lg:items-center">
@@ -281,6 +288,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthenticated, theme
                         onChange={(e) => setName(e.target.value)}
                         placeholder="Your name"
                         className={`${inputCls} ${fieldErrs.name ? inputErrCls : ''}`}
+                        style={{ fontSize: 16 }}
                         required
                         autoComplete="name"
                         aria-required="true"
@@ -302,6 +310,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthenticated, theme
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="you@domain.com"
                       className={`${inputCls} ${fieldErrs.email ? inputErrCls : ''}`}
+                      style={{ fontSize: 16 }}
                       required
                       autoComplete="email"
                       aria-required="true"
@@ -323,6 +332,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthenticated, theme
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
                       className={`${inputCls} ${fieldErrs.password ? inputErrCls : ''}`}
+                      style={{ fontSize: 16 }}
                       required
                       autoComplete={isSignUp ? 'new-password' : 'current-password'}
                       aria-required="true"

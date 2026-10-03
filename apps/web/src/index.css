@@ -156,12 +156,13 @@
     overflow: hidden;
   }
 
-  /* iOS Safari zooms focused controls under 16px. Tailwind text-sm (14px) must not win. */
+  /* iOS Safari zooms focused controls under 16px. Force 16px on phones. */
   @media (max-width: 1023px) {
     input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='hidden']):not([type='button']):not([type='submit']):not([type='reset']),
     select,
     textarea {
       font-size: 16px !important;
+      line-height: 1.25 !important;
     }
   }
 
