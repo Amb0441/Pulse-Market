@@ -2,13 +2,14 @@
 <html lang="en" class="h-full">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
     <title>Pulse Market — Hyper-Local Neighborhood Marketplace</title>
     <meta name="description" content="Buy and sell with your neighbors. Post an item in seconds and browse what is for sale nearby on Pulse Market." />
     <meta property="og:title" content="Pulse Market — Hyper-Local Neighborhood Marketplace" />
     <meta property="og:description" content="Buy and sell with your neighbors. Post an item in seconds and browse what is for sale nearby on Pulse Market." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="format-detection" content="telephone=no" />
 
     <!--
       CSP for `vite dev`, where there is no server to send response headers from.
@@ -28,12 +29,14 @@
     -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://res.cloudinary.com https://*.supabase.co https://tile.openstreetmap.org https://*.tile.openstreetmap.org; connect-src 'self' __CSP_API_ORIGIN__http://127.0.0.1:3000 http://localhost:3000 https://*.supabase.co wss://*.supabase.co ws://localhost:24678 https://tile.openstreetmap.org https://*.tile.openstreetmap.org; object-src 'none'; base-uri 'self'; form-action 'self'">
 
-    <!-- PWA -->
+    <!-- PWA: black-translucent draws under the status bar so safe-area padding
+         can paint a continuous header instead of a stacked web chrome strip. -->
     <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#f6f1e7" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#cf4a2a" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Pulse Market" />
     <link rel="icon" type="image/svg+xml" href="/icons/icon-192x192.svg" />
     <link rel="icon" type="image/svg+xml" href="/icons/badge-72x72.svg" sizes="72x72" />

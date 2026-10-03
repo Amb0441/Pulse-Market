@@ -32,7 +32,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     if (!error) return this.props.children;
 
     return (
-      <div className="h-screen grid place-items-center bg-paper px-6">
+      <div className="app-height grid place-items-center bg-paper px-6">
         <div className="max-w-md w-full text-center">
           <div className="w-14 h-14 mx-auto rounded-2xl bg-sand grid place-items-center mb-4">
             <svg

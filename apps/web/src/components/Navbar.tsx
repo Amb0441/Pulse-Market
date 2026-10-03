@@ -48,13 +48,14 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <>
-      <div className="sticky top-0 z-[calc(var(--z-sticky)+1)] w-full bg-clay/10 border-b border-clay/20 px-4 py-2 text-center text-xs font-medium text-clay">
+      <div className="shrink-0 z-[calc(var(--z-sticky)+1)] w-full bg-clay/10 border-b border-clay/20 px-4 py-2 text-center text-xs font-medium text-clay safe-top">
         <MapPin className="w-3 h-3 inline-block mr-1.5 text-clay" aria-hidden="true" />
-        Your location is private — listings show an area, never your exact address
+        <span className="hidden sm:inline">Your location is private — listings show an area, never your exact address</span>
+        <span className="sm:hidden">Your exact address stays private</span>
       </div>
 
-      <header className="sticky top-0 z-[var(--z-sticky)] w-full bg-paper/95 backdrop-blur border-b border-line transition-smooth">
-        <div className="max-w-7xl mx-auto h-16 sm:h-18 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
+      <header className="shrink-0 z-[var(--z-sticky)] w-full bg-paper/95 backdrop-blur border-b border-line transition-smooth">
+        <div className="max-w-7xl mx-auto h-14 sm:h-16 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
           {/* Wordmark and area line are sibling buttons: nesting <button> in
               <button> is invalid HTML, and the area click would also navigate. */}
           <div className="flex items-center gap-3">
@@ -152,11 +153,11 @@ export const Navbar: React.FC<NavbarProps> = ({
       </header>
 
       <nav
-        className="lg:hidden fixed bottom-0 inset-x-0 z-[var(--z-sticky)] bg-card border-t border-line safe-bottom animate-slide-up"
+        className="lg:hidden fixed bottom-0 inset-x-0 z-[var(--z-sticky)] bg-card/95 backdrop-blur border-t border-line safe-bottom"
         role="navigation"
         aria-label="Mobile navigation"
       >
-        <div className="grid grid-cols-5 items-end px-2 pt-2 pb-2">
+        <div className="grid grid-cols-5 items-end px-1 pt-1.5 pb-1.5">
           {[TABS[0], TABS[1]].map(({ id, label, Icon }) => (
             <MobileTab
               key={id}
