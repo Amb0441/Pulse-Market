@@ -29,7 +29,7 @@ const CATEGORIES: Category[] = [
  * neighbourhoods table behind it. */
 const MAX_LOCATION_LEN = 120;
 
-const field = 'w-full h-11 px-3.5 rounded-lg border border-line bg-paper text-sm placeholder:text-ink-soft/60 focus:outline-none focus:border-ink focus:ring-2 focus:ring-clay/20 transition-smooth';
+const field = 'w-full h-12 px-3.5 rounded-lg border border-line bg-paper text-base placeholder:text-ink-soft/60 focus:outline-none focus:border-ink focus:ring-2 focus:ring-clay/20 transition-smooth';
 const labelCls = 'block text-xs font-semibold text-ink-soft mb-1.5';
 
 export const SellModal: React.FC<SellModalProps> = ({ isOpen, onClose }) => {
@@ -302,7 +302,7 @@ export const SellModal: React.FC<SellModalProps> = ({ isOpen, onClose }) => {
               onChange={(e) => setRawDescription(e.target.value)}
               rows={3}
               placeholder="Condition, dimensions, when you're free for pickup…"
-              className="w-full px-3.5 py-3 rounded-lg border border-line bg-paper text-sm placeholder:text-ink-soft/60 focus:outline-none focus:border-ink focus:ring-2 focus:ring-clay/20 resize-none transition-smooth"
+              className="w-full px-3.5 py-3 rounded-lg border border-line bg-paper text-base placeholder:text-ink-soft/60 focus:outline-none focus:border-ink focus:ring-2 focus:ring-clay/20 resize-none transition-smooth"
               aria-describedby="description-hint"
             />
             <p id="description-hint" className="mt-1 text-xs text-ink-muted">Describe the condition and dimensions here — there is no separate condition field yet, so buyers only see what you write.</p>

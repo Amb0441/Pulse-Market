@@ -157,7 +157,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({ listing, onClose, them
                 rows={3}
                 maxLength={MAX_DETAILS}
                 placeholder="What should we know?"
-                className="mt-1.5 w-full px-3.5 py-3 rounded-lg border border-line bg-paper text-sm placeholder:text-ink-soft/60 focus:outline-none focus:border-ink focus:ring-2 focus:ring-clay/20 resize-none transition-smooth"
+                className="mt-1.5 w-full px-3.5 py-3 rounded-lg border border-line bg-paper text-base placeholder:text-ink-soft/60 focus:outline-none focus:border-ink focus:ring-2 focus:ring-clay/20 resize-none transition-smooth"
               />
               <p className="mt-1 text-xs text-ink-muted text-right">
                 {details.length}/{MAX_DETAILS}

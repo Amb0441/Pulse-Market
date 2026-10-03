@@ -146,7 +146,7 @@ export const LocationPickerModal: React.FC<LocationPickerModalProps> = ({
                   onChange={(e) => onLabelChange(e.target.value)}
                   maxLength={80}
                   placeholder={labelPlaceholder}
-                  className="mt-1 w-full h-11 px-3 rounded-lg border border-line bg-card text-sm text-ink placeholder:text-ink-soft/70 focus-ring"
+                  className="mt-1 w-full h-12 px-3 rounded-lg border border-line bg-card text-base text-ink placeholder:text-ink-soft/70 focus-ring"
                 />
               </label>
               <p className="mt-1 text-[11px] leading-snug text-ink-soft">
