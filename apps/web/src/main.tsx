@@ -6,15 +6,35 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import App from './App.tsx';
 import './index.css';
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <ErrorBoundary>
-        <App />
-      </ErrorBoundary>
-    </QueryClientProvider>
-  </StrictMode>,
-);
+const demoChat =
+  import.meta.env.DEV && new URLSearchParams(window.location.search).get('demo') === 'mobile-chat';
+
+async function boot() {
+  const root = createRoot(document.getElementById('root')!);
+  if (demoChat) {
+    const { MobileChatPreview } = await import('./dev/MobileChatPreview');
+    root.render(
+      <StrictMode>
+        <ErrorBoundary>
+          <MobileChatPreview />
+        </ErrorBoundary>
+      </StrictMode>,
+    );
+    return;
+  }
+
+  root.render(
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <ErrorBoundary>
+          <App />
+        </ErrorBoundary>
+      </QueryClientProvider>
+    </StrictMode>,
+  );
+}
+
+void boot();
 
 // Registers the service worker, production only: it serves navigations cache-first,
 // so dev would pin a stale index.html; in a module because import.meta.env is only substituted there.
