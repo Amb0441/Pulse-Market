@@ -68,32 +68,37 @@ Auth, and we never sell your data.
 | API | Express on Bun (`:3000`) |
 | Data & auth | Supabase — Postgres, Auth, no Supabase client in the browser |
 | Images | Cloudinary (required in production) |
-| Serving | nginx + Docker (`docker-compose.prod.yml`), nginx proxies `/api` |
+| Hosting | Cloudflare Pages (static front end) |
 
 ## Run locally
 
-Prerequisites: [Bun](https://bun.sh) 1.4+, a Supabase project (URL + service
-role key), a Cloudinary account.
+Prerequisites: [Bun](https://bun.sh) 1.4+ (API runtime), Node 20.19+ or 22.12+,
+a Supabase project (URL + service role key), a Cloudinary account.
+
+Secrets go only in `apps/api/.env`. Do not create a web `.env` with `VITE_`
+keys for local work, and never put the service_role key, database URL, or
+Cloudinary secret in a `VITE_` variable.
 
 ```bash
-bun install
+# from the repo root
+npm install
 
-cp backend/.env.example backend/.env   # then fill in the real values
-cp .env.example .env                   # nothing to fill in; see below
+cp apps/api/.env.example apps/api/.env   # then fill in the real values
 
 # Apply the schema once, in the Supabase SQL editor:
-#   backend/supabase-schema.sql
+#   apps/api/supabase-schema.sql
 
-bun run dev
+npm run dev
 ```
 
-`bun run dev` starts **both** processes: the API on `:3000` and Vite on `:5173`.
-Running `bun run dev:web` alone starts only the front end, and every API call will
-fail — the UI is not built to talk to anything but the API.
+`npm run dev` starts **both** processes: the API on `:3000` and Vite on `:5173`.
+Running `npm run dev:web` alone starts only the front end, and every API call will
+fail.
 
-The front end calls same-origin `/api`, which Vite proxies to the backend, so there
-is no CORS involved in development and no `VITE_API_URL` to configure. In
-production the same `/api` path is proxied by nginx.
+The front end calls same-origin `/api`, which Vite proxies to the API, so there
+is no CORS involved in development and no `VITE_API_URL` to configure. Cloudflare
+Pages has no such proxy: set `VITE_API_URL` to the public API origin at build
+time, and list the Pages origin in the API's `FRONTEND_URL`.
 
 > The Vite HMR port is **24678**, deliberately not 3000. The API owns 3000; an HMR
 > server on the same port silently swallows every API request and the failure looks
@@ -102,15 +107,15 @@ production the same `/api` path is proxied by nginx.
 ## Layout
 
 ```
-src/                 React front end
-  lib/api.ts         fetch wrapper, the only place that talks to the network
-  lib/listing.ts     DB row -> UI shape
-  lib/format.ts      timestamp, distance and peso formatting
-  lib/geo.ts         haversine distance, Philippines bounds
-  lib/realtime.ts    SSE reader (fetch-based, not EventSource)
-  components/        UI - LandingPage, Feed, MapView, SellModal, ChatHub, Dashboard
-  hooks/useQueries.ts React Query bindings
-backend/             Express API
+apps/web/            React front end
+  src/lib/api.ts     fetch wrapper, the only place that talks to the network
+  src/lib/listing.ts DB row -> UI shape
+  src/lib/format.ts  timestamp, distance and peso formatting
+  src/lib/geo.ts     haversine distance, Philippines bounds
+  src/lib/realtime.ts SSE reader (fetch-based, not EventSource)
+  src/components/    UI - LandingPage, Feed, MapView, SellModal, ChatHub, Dashboard
+  src/hooks/useQueries.ts React Query bindings
+apps/api/            Express API
   src/server.ts      all routes
   src/schemas.ts     zod request validation - the source of truth for enums
   supabase-schema.sql  full schema, for a fresh database
@@ -119,8 +124,8 @@ backend/             Express API
 
 ## Conventions worth knowing
 
-- **Enums live in `backend/src/schemas.ts`.** The category and status vocabularies
-  are duplicated in `src/lib/listing.ts` and `src/types.ts` for rendering. When you
+- **Enums live in `apps/api/src/schemas.ts`.** The category and status vocabularies
+  are duplicated in `apps/web/src/lib/listing.ts` and `apps/web/src/types.ts` for rendering. When you
   change one, change all three, and add a migration for the database CHECK
   constraint. They drifted apart once, and the API rejected most of what the UI
   offered.
@@ -180,21 +185,93 @@ backend/             Express API
 ## Tests
 
 ```bash
-bun run --cwd backend test    # API security + config boot-guard tests
-bun run lint                  # tsc --noEmit
-bun run scan:secrets          # no server-side secrets in the client bundle
+bun run --cwd apps/api test   # API security + config boot-guard tests
+npm run lint                  # tsc --noEmit
+npm run scan:secrets          # no server-side secrets in the client bundle
 ```
 
-## Deploying
+## Deploy
 
-`Dockerfile.dev` / `docker-compose.yml` for development containers,
-`Dockerfile` / `docker-compose.prod.yml` for production, where nginx serves the
-built front end and proxies `/api` to the API container:
+Free showcase path: **Cloudflare Pages** (UI) + **Render** (API). Same-origin
+Docker Compose remains the better always-on setup; this split is for a public
+demo on free tiers. The first hit after Render sleeps can take ~30s; chat falls
+back to polling if SSE drops.
 
-```bash
-docker compose -f docker-compose.prod.yml up -d --build
-```
+Secrets stay in the Render dashboard. Never put `SUPABASE_SERVICE_ROLE_KEY`, a
+database URL, or `CLOUDINARY_API_SECRET` in a `VITE_` variable or in git.
 
-Security headers are set once per response: helmet owns `/api`, nginx owns the
-document and static files. `FRONTEND_URL` is pinned in the prod compose file so
-the CORS allowlist never inherits the dev origin from `backend/.env`.
+### 1. Push the repo to GitHub
+
+Do not commit `apps/api/.env`. Confirm `git status` does not list it.
+
+### 2. API on Render
+
+1. [Render](https://render.com) → New → Blueprint, connect this repo. It reads
+   `render.yaml` and creates `pulse-market-api`.
+2. If Blueprint is unavailable: New → Web Service → Docker. Dockerfile path
+   `apps/api/Dockerfile`, context `.` (repo root). Instance type **Free**.
+   Health check `/api/health`.
+3. Fill environment variables (from your local `apps/api/.env`, paste in the
+   dashboard only):
+
+| Variable | Value |
+| --- | --- |
+| `NODE_ENV` | `production` |
+| `TRUST_PROXY` | `true` |
+| `ALLOW_CLOUDFLARE_PAGES` | `true` |
+| `FRONTEND_URL` | temporary `https://placeholder.pages.dev` until step 3 |
+| `APP_URL` | same as `FRONTEND_URL` for now |
+| `CONTACT_EMAIL` | an email you actually read |
+| `SUPABASE_URL` | Supabase project URL |
+| `SUPABASE_ANON_KEY` | anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | **service_role only, never VITE_** |
+| `CLOUDINARY_CLOUD_NAME` | Cloudinary cloud name |
+| `CLOUDINARY_API_KEY` | Cloudinary key |
+| `CLOUDINARY_API_SECRET` | Cloudinary secret |
+
+4. Deploy. Copy the service URL, e.g. `https://pulse-market-api.onrender.com`
+   — **no trailing slash**. Open `/api/health`; you should see JSON.
+
+Render injects `PORT`; do not set it to 3000.
+
+### 3. UI on Cloudflare Pages
+
+1. [Cloudflare Dashboard](https://dash.cloudflare.com) → Workers & Pages →
+   Create → Pages → Connect to Git → this repo.
+2. Build settings:
+
+| Setting | Value |
+| --- | --- |
+| Framework preset | None |
+| Root directory | `apps/web` |
+| Build command | `npm run build` |
+| Build output directory | `dist` |
+| Node version | `22` (from `apps/web/.nvmrc`) |
+
+3. Environment variables (Production **and** Preview), then deploy:
+
+| Variable | Public | Value |
+| --- | --- | --- |
+| `VITE_API_URL` | yes | the Render origin from step 2, no path, no trailing slash |
+
+Do not add any other `VITE_` keys.
+
+4. After the first Pages deploy, copy the Pages origin
+   (`https://<project>.pages.dev`). On Render, set `FRONTEND_URL` and `APP_URL`
+   to that origin (comma-separate a custom domain later if you add one). Restart
+   the API. `ALLOW_CLOUDFLARE_PAGES=true` also lets `*.pages.dev` preview URLs
+   through CORS.
+
+5. Reload the Pages site, sign up, list an item, send a message.
+
+### Serving behaviour
+
+`apps/web/public/_headers` and `_redirects` are copied into `dist/` by Vite.
+There is no `/api` proxy on Pages; the browser calls `VITE_API_URL` directly.
+The build stamps that origin into CSP. Changing `VITE_API_URL` requires a new
+Pages deploy.
+
+### Local production stack (optional)
+
+`docker-compose.prod.yml` still builds the nginx + API pair on one origin. Use
+it when you move off free tiers.

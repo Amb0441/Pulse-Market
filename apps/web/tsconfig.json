@@ -1,5 +1,4 @@
 {
-  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "target": "ES2022",
     "useDefineForClassFields": true,
@@ -17,7 +16,16 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+
+    // These were inherited from the repo-root tsconfig.base.json via `extends`.
+    // Cloudflare Pages builds with the root directory set to apps/web, and the
+    // base file sits two levels up, outside that directory: `tsc` and Vite both
+    // failed to resolve it and the build could not start. The values are copied
+    // here verbatim so this package stands alone.
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "sourceMap": true
   },
   "include": ["src", "vite.config.ts"]
 }

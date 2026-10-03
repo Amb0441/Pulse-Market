@@ -48,7 +48,7 @@ for (const [key, value] of Object.entries(frontendEnv)) {
 
 // 2. Real backend secrets must not appear in the built bundle.
 if (existsSync('dist')) {
-  const backendEnv = parseEnv('../apps/api/.env');
+  const backendEnv = parseEnv('../api/.env');
   const sensitive = ['SUPABASE_SERVICE_ROLE_KEY', 'CLOUDINARY_API_SECRET', 'SUPABASE_ANON_KEY']
     .map((k) => [k, backendEnv[k]] as const)
     .filter(([, v]) => v && !v.startsWith('your_'));

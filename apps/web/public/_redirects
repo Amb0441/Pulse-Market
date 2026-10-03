@@ -1,0 +1,14 @@
+# SPA fallback for Cloudflare Pages.
+#
+# Client-side routes such as /privacy must return index.html rather than 404, or
+# a refresh on a deep link breaks. The 200 rewrite serves the document without
+# the browser seeing a redirect, so the URL in the address bar stays correct.
+#
+# Only ONE dynamic rewrite is needed, and Cloudflare supports rewrites (status
+# 200) while other rewrite status codes are unsupported. /api/* deliberately has
+# no rule: uploads go to the API origin directly, so a same-origin /api request
+# is a misconfiguration and falling through to the SPA shell is the honest
+# signal that the URL is not being proxied here.
+#
+# This file ships from public/ into dist/. Vite does not process it.
+/*  /index.html  200

@@ -25,6 +25,10 @@ const envSchema = z.object({
   FRONTEND_URL: z.string().default('http://localhost:5173'),
   // Public site origin, used for canonical URLs in legal pages and the sitemap.
   APP_URL: z.string().default('http://localhost:5173'),
+  // When true, any https://*.pages.dev origin may call the API. For a Pages +
+  // Render showcase so preview URLs work without listing every hash. Leave
+  // false on a locked-down VPS.
+  ALLOW_CLOUDFLARE_PAGES: boolish,
   SUPABASE_URL: z.string().optional(),
   SUPABASE_ANON_KEY: z.string().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
@@ -59,7 +63,7 @@ export const hasSupabase = !!(env.SUPABASE_URL || process.env.SUPABASE_URL) && !
 export const hasCloudinary = !!(env.CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME);
 
 const MISSING_MESSAGE =
-  'Missing required credentials. See backend/.env.example for the full list.';
+  'Missing required credentials. See apps/api/.env.example for the full list.';
 
 const problems: string[] = [];
 
@@ -76,7 +80,8 @@ if (isProd && isPlaceholder(env.CONTACT_EMAIL)) {
   problems.push('CONTACT_EMAIL is required in production (the legal pages must name a reachable contact)');
 }
 
-// Don't fail on Vercel - log warnings instead
+// Missing credentials are a warning, not a fatal error, so a partial local
+// setup still boots and reports what is absent.
 if (problems.length) {
   console.warn('Configuration warnings:', problems);
 }

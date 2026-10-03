@@ -1,0 +1,39 @@
+# Cloudflare Pages headers for the built SPA (served from dist/).
+#
+# Vite copies public/ into dist/. The csp-api-origin plugin then replaces
+# __CSP_API_ORIGIN__ with VITE_API_URL (a public https origin, never a secret).
+# Pages has no /api proxy, so production fetches go to that origin.
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/icons/*
+  Cache-Control: public, max-age=2592000
+
+/index.html
+  Cache-Control: no-cache, must-revalidate
+
+# Never cached, or an installed service worker pins clients to a dead build.
+# Matches nginx-security-headers.conf: the file is stamped per build by the
+# sw-version Vite plugin, so it must be revalidated on every deploy.
+/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+# Site-wide document headers. Use /* so SPA deep links get them, not only /.
+#
+# WARNING: index.html also ships a Content-Security-Policy <meta> tag. Browser
+# policies are additive, so the effective policy is the intersection of this
+# header and that tag. img-src includes Cloudinary because listing photos are
+# stored there. __CSP_API_ORIGIN__ is the public API origin from VITE_API_URL.
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(self), camera=(), microphone=(), interest-cohort=()
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://res.cloudinary.com https://*.supabase.co https://tile.openstreetmap.org https://*.tile.openstreetmap.org; connect-src 'self' __CSP_API_ORIGIN__https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+
+/assets/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(self), camera=(), microphone=(), interest-cohort=()

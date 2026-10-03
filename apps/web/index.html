@@ -10,8 +10,23 @@
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
 
-    <!-- CSP for dev: allows map tiles, Cloudinary images, Google Fonts, API calls, HMR websocket -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://res.cloudinary.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org; connect-src 'self' http://localhost:3000 ws://localhost:24678 https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://res.cloudinary.com https://fonts.googleapis.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+    <!--
+      CSP for `vite dev`, where there is no server to send response headers from.
+
+      Vite copies index.html into dist/ untouched apart from rewriting the script
+      src, so this tag ships to production too. Browser policies are additive, so
+      where Pages also sends a Content-Security-Policy header the effective policy
+      is the INTERSECTION of the two - this file is the stricter of them and any
+      source it omits is blocked even if public/_headers allows it. The two must
+      therefore stay in step; public/_headers is the copy meant for production.
+
+      Listing photos are Cloudinary URLs, so img-src must allow res.cloudinary.com.
+      Locally the browser talks to same-origin /api (Vite proxies to :3000).
+      __CSP_API_ORIGIN__ is replaced at build with VITE_API_URL when that is set
+      (Cloudflare Pages); it is stripped when empty so this tag stays valid in
+      `vite dev`. ws://localhost:24678 is Vite HMR only.
+    -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://res.cloudinary.com https://*.supabase.co https://tile.openstreetmap.org https://*.tile.openstreetmap.org; connect-src 'self' __CSP_API_ORIGIN__http://127.0.0.1:3000 http://localhost:3000 https://*.supabase.co wss://*.supabase.co ws://localhost:24678 https://tile.openstreetmap.org https://*.tile.openstreetmap.org; object-src 'none'; base-uri 'self'; form-action 'self'">
 
     <!-- PWA -->
     <link rel="manifest" href="/manifest.json" />

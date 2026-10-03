@@ -1,0 +1,45 @@
+# Free showcase: API on Render. Secrets are NOT in this file — set them in the
+# Render dashboard (sync: false). Never put service_role or Cloudinary secrets
+# in VITE_ variables or in this repo.
+#
+# After the first deploy, copy the service URL (https://….onrender.com, no
+# trailing slash) into Cloudflare Pages as VITE_API_URL, then put the Pages
+# origin into FRONTEND_URL and APP_URL here and restart the API.
+#
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: pulse-market-api
+    runtime: docker
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TRUST_PROXY
+        value: "true"
+      - key: ALLOW_CLOUDFLARE_PAGES
+        value: "true"
+      - key: LOG_LEVEL
+        value: info
+      - key: FRONTEND_URL
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: CONTACT_EMAIL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false

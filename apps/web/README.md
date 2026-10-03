@@ -72,28 +72,33 @@ Auth, and we never sell your data.
 
 ## Run locally
 
-Prerequisites: [Bun](https://bun.sh) 1.4+, a Supabase project (URL + service
-role key), a Cloudinary account.
+Prerequisites: [Bun](https://bun.sh) 1.4+ (API runtime), Node 20.19+ or 22.12+,
+a Supabase project (URL + service role key), a Cloudinary account.
+
+Secrets go only in `apps/api/.env`. Do not create a web `.env` with `VITE_`
+keys for local work, and never put the service_role key, database URL, or
+Cloudinary secret in a `VITE_` variable.
 
 ```bash
-bun install
+# from the repo root
+npm install
 
-cp backend/.env.example backend/.env   # then fill in the real values
-cp .env.example .env                   # nothing to fill in; see below
+cp apps/api/.env.example apps/api/.env   # then fill in the real values
 
 # Apply the schema once, in the Supabase SQL editor:
-#   backend/supabase-schema.sql
+#   apps/api/supabase-schema.sql
 
-bun run dev
+npm run dev
 ```
 
-`bun run dev` starts **both** processes: the API on `:3000` and Vite on `:5173`.
-Running `bun run dev:web` alone starts only the front end, and every API call will
-fail — the UI is not built to talk to anything but the API.
+`npm run dev` starts **both** processes: the API on `:3000` and Vite on `:5173`.
+Running `npm run dev:web` alone starts only the front end, and every API call will
+fail.
 
-The front end calls same-origin `/api`, which Vite proxies to the backend, so there
-is no CORS involved in development and no `VITE_API_URL` to configure. In
-production the same `/api` path is proxied by nginx.
+The front end calls same-origin `/api`, which Vite proxies to the API, so there
+is no CORS involved in development and no `VITE_API_URL` to configure. Cloudflare
+Pages has no such proxy: set `VITE_API_URL` to the public API origin at build
+time, and list the Pages origin in the API's `FRONTEND_URL`.
 
 > The Vite HMR port is **24678**, deliberately not 3000. The API owns 3000; an HMR
 > server on the same port silently swallows every API request and the failure looks
@@ -102,15 +107,15 @@ production the same `/api` path is proxied by nginx.
 ## Layout
 
 ```
-src/                 React front end
-  lib/api.ts         fetch wrapper, the only place that talks to the network
-  lib/listing.ts     DB row -> UI shape
-  lib/format.ts      timestamp, distance and peso formatting
-  lib/geo.ts         haversine distance, Philippines bounds
-  lib/realtime.ts    SSE reader (fetch-based, not EventSource)
-  components/        UI - LandingPage, Feed, MapView, SellModal, ChatHub, Dashboard
-  hooks/useQueries.ts React Query bindings
-backend/             Express API
+apps/web/            React front end
+  src/lib/api.ts     fetch wrapper, the only place that talks to the network
+  src/lib/listing.ts DB row -> UI shape
+  src/lib/format.ts  timestamp, distance and peso formatting
+  src/lib/geo.ts     haversine distance, Philippines bounds
+  src/lib/realtime.ts SSE reader (fetch-based, not EventSource)
+  src/components/    UI - LandingPage, Feed, MapView, SellModal, ChatHub, Dashboard
+  src/hooks/useQueries.ts React Query bindings
+apps/api/            Express API
   src/server.ts      all routes
   src/schemas.ts     zod request validation - the source of truth for enums
   supabase-schema.sql  full schema, for a fresh database
@@ -119,8 +124,8 @@ backend/             Express API
 
 ## Conventions worth knowing
 
-- **Enums live in `backend/src/schemas.ts`.** The category and status vocabularies
-  are duplicated in `src/lib/listing.ts` and `src/types.ts` for rendering. When you
+- **Enums live in `apps/api/src/schemas.ts`.** The category and status vocabularies
+  are duplicated in `apps/web/src/lib/listing.ts` and `apps/web/src/types.ts` for rendering. When you
   change one, change all three, and add a migration for the database CHECK
   constraint. They drifted apart once, and the API rejected most of what the UI
   offered.

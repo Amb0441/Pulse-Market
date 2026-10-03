@@ -56,6 +56,18 @@ export function devHeaderOverrides(_req: Request, res: Response, next: NextFunct
 /**
  * Loopback origin ignoring the port (Vite moves when 5173 is busy); dev only, prod uses `allowedOrigins`.
  */
+function isCloudflarePagesOrigin(origin: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(origin);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== 'https:') return false;
+  const host = url.hostname.toLowerCase();
+  return host === 'pages.dev' || host.endsWith('.pages.dev');
+}
+
 function isLoopbackOrigin(origin: string): boolean {
   let url: URL;
   try {
@@ -74,13 +86,14 @@ export function corsMiddleware() {
       // Same-origin, curl, server-to-server: no Origin header.
       if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) return callback(null, true);
+      if (env.ALLOW_CLOUDFLARE_PAGES && isCloudflarePagesOrigin(origin)) return callback(null, true);
       if (!isProd && isLoopbackOrigin(origin)) return callback(null, true);
       audit.warn('cors_rejected', { origin, allowed: allowedOrigins });
       return callback(
         new AppError(
           403,
           'CORS_DENIED',
-          'Origin not allowed. Add it to FRONTEND_URL in backend/.env.',
+          'Origin not allowed. Add it to FRONTEND_URL in apps/api/.env.',
         ),
       );
     },

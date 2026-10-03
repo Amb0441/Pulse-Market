@@ -1199,12 +1199,6 @@ if (import.meta.main) {
   }
 }
 
-// Start realtime in serverless context (Vercel may reuse lambdas)
-if (process.env.VERCEL) {
-  // Don't auto-start realtime in serverless to avoid connection leaks
-  // The app uses polling fallback; SSE is better in persistent environments
-}
-
 export { app };
 
 
