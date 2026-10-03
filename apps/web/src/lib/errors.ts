@@ -10,6 +10,8 @@ const BY_CODE: Record<string, string> = {
   INVALID_CREDENTIALS: 'That email and password combination is not correct.',
   EMAIL_TAKEN: 'An account already exists with that email address.',
   SIGNUP_FAILED: 'We could not create your account. Please try again in a moment.',
+  SIGNUP_SIGNIN_FAILED:
+    'Your account was created, but we could not sign you in. Try signing in with the same email and password.',
   UNAUTHORIZED: 'Please sign in to continue.',
   FORBIDDEN: 'You do not have permission to do that.',
   CORS_DENIED: 'The app is not allowed to reach the server. Check FRONTEND_URL.',

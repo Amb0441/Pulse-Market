@@ -112,10 +112,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthenticated, theme
               onAuthenticated();
               return;
             }
-            setNotice(
-              data?.message ||
-                'Account created. Check your email to verify your account, then sign in.',
-            );
+            setNotice('Account created. Sign in with the same email and password to continue.');
           },
           onError: (err) => onFail(err, 'We could not create your account.'),
         },

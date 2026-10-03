@@ -402,7 +402,6 @@ export const api = {
       fetchJson<{
         user: unknown;
         session?: { access_token: string; refresh_token?: string; expires_at?: number };
-        message?: string;
       }>('/auth/signup', {
         method: 'POST',
         body: JSON.stringify({ email, password, username, lat, lng, location: location || undefined }),
