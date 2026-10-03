@@ -14,7 +14,7 @@ interface LandingPageProps {
 
 /** 16px minimum — iOS Safari zooms any focused control under 16px. */
 const inputCls =
-  'w-full h-12 pl-10 pr-4 rounded-xl border border-line bg-card text-[16px] leading-normal text-ink placeholder:text-ink-soft/60 focus:outline-none focus:border-ink focus:ring-2 focus:ring-clay/20 transition-smooth';
+  'w-full h-12 pl-10 pr-4 rounded-xl border border-line bg-card text-[16px] leading-normal text-ink placeholder:text-ink-soft/60 focus:outline-none focus:border-ink focus:ring-2 focus:ring-clay/20 transition-smooth touch-manipulation';
 
 /** Adds a red border to whichever field the server (or the local check) rejected. */
 const inputErrCls = 'border-rose focus:border-rose focus:ring-rose/20';
@@ -195,8 +195,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthenticated, theme
           </div>
         </section>
 
-        {/* Mobile: full-bleed auth scene. Desktop: card in the right column. */}
-        <section className="lg:col-span-5 animate-rise w-full flex flex-col min-h-0" style={{ animationDelay: '80ms' }}>
+        {/* Mobile: full-bleed auth scene. Desktop: card in the right column.
+            No animate-rise here — a lingering transform on the form parent can
+            make iOS mis-measure input font size and zoom on focus. */}
+        <section className="lg:col-span-5 w-full flex flex-col min-h-0">
           <div className="flex-1 flex flex-col w-full max-w-none lg:max-w-md mx-auto lg:mx-0 bg-transparent lg:bg-card lg:border lg:border-line lg:rounded-2xl px-5 pt-6 pb-4 sm:px-8 sm:pt-8 lg:p-7 lg:shadow-[6px_6px_0_var(--color-line)] relative lg:overflow-hidden">
             <div className="hidden lg:block absolute inset-0 bg-gradient-to-br from-clay/5 via-transparent to-moss/5" aria-hidden="true" />
 

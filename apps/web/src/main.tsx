@@ -3,8 +3,11 @@ import { createRoot } from 'react-dom/client';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { lockMobileViewportZoom } from './lib/lockMobileViewportZoom';
 import App from './App.tsx';
 import './index.css';
+
+lockMobileViewportZoom();
 
 const demoParam = import.meta.env.DEV
   ? new URLSearchParams(window.location.search).get('demo')
