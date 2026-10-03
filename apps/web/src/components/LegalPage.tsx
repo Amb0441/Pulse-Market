@@ -254,24 +254,35 @@ export const LegalPage: React.FC<LegalPageProps> = ({ kind }) => {
   const sections = SECTIONS[kind];
 
   return (
-    <div className="min-h-full bg-paper text-ink">
-      <div className="mx-auto max-w-2xl px-5 py-10 sm:py-14">
-        <a
-          href="/"
-          className="text-sm text-ink-soft hover:text-ink transition-smooth"
-        >
-          &larr; Back to Pulse Market
-        </a>
+    <div className="min-h-full app-height overflow-y-auto overscroll-none bg-paper text-ink">
+      {/* Opaque top strip + safe-area so the back link is not drawn under the
+          iOS status bar in the home-screen PWA (where it looked invisible). */}
+      <header className="sticky top-0 z-[var(--z-sticky)] bg-paper border-b border-line safe-top">
+        <div className="mx-auto max-w-2xl px-5 h-14 flex items-center">
+          <a
+            href="/"
+            className="inline-flex items-center gap-1.5 text-base font-semibold text-ink hover:text-clay transition-colors touch-manipulation focus-ring rounded-sm"
+          >
+            <span aria-hidden="true">&larr;</span>
+            Back to Pulse Market
+          </a>
+        </div>
+      </header>
 
-        <h1 className="mt-6 font-display text-3xl sm:text-4xl font-bold">{title}</h1>
+      <div className="mx-auto max-w-2xl px-5 py-8 sm:py-12 pb-[max(2rem,env(safe-area-inset-bottom,0px))]">
+        <h1 className="font-display text-3xl sm:text-4xl font-bold text-ink">{title}</h1>
         <p className="mt-2 text-sm text-ink-soft">Last updated {LAST_UPDATED}</p>
 
-        <nav aria-label="Help and legal pages" className="mt-4 flex flex-wrap gap-4 text-sm">
+        <nav aria-label="Help and legal pages" className="mt-5 flex flex-wrap gap-2 text-sm">
           {KIND_ORDER.map((k) => (
             <a
               key={k}
               href={`/${k}`}
-              className={kind === k ? 'text-clay font-semibold' : 'text-ink-soft hover:text-ink'}
+              className={`h-10 px-4 rounded-full grid place-items-center font-semibold transition-colors touch-manipulation focus-ring ${
+                kind === k
+                  ? 'bg-clay text-white'
+                  : 'bg-card border border-line text-ink hover:bg-sand'
+              }`}
               aria-current={kind === k ? 'page' : undefined}
             >
               {NAV_LABELS[k]}
@@ -285,7 +296,7 @@ export const LegalPage: React.FC<LegalPageProps> = ({ kind }) => {
               <h2 className="font-display text-lg font-bold text-ink">{section.heading}</h2>
               <div className="mt-2 space-y-3">
                 {section.body.map((paragraph) => (
-                  <p key={paragraph} className="text-[15px] leading-relaxed text-ink-soft">
+                  <p key={paragraph} className="text-base leading-relaxed text-ink-soft">
                     {paragraph}
                   </p>
                 ))}
