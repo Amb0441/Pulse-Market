@@ -142,7 +142,7 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
       <div
         ref={modalRef}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-xl max-h-[94vh] sm:max-h-[90vh] bg-card border border-line rounded-t-3xl sm:rounded-2xl overflow-hidden flex flex-col animate-scale-in"
+        className="w-full max-w-xl max-h-[min(94dvh,100%)] sm:max-h-[90vh] bg-card border border-line rounded-t-3xl sm:rounded-2xl overflow-hidden flex flex-col animate-scale-in"
       >
         <div className="relative">
           <div className="aspect-4/3 sm:aspect-[4/3] overflow-hidden">
@@ -293,7 +293,7 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
             </button>
           </div>
 
-          <div className="flex items-center gap-3 pt-2">
+          <div className="flex items-center gap-3 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:pb-2">
             <button
               onClick={() => {
                 if (isOwner) return;
@@ -301,7 +301,7 @@ export const ListingDetailModal: React.FC<ListingDetailModalProps> = ({
                 setTimeout(() => onStartChat(listing), 150);
               }}
               disabled={sold || isOwner}
-              className="flex-1 h-12 rounded-full bg-clay hover:bg-clay-hover disabled:bg-line disabled:cursor-not-allowed text-white font-semibold text-sm transition-colors touch-manipulation focus-ring active:scale-[0.98] flex items-center justify-center gap-2"
+              className="flex-1 h-12 min-h-12 rounded-full bg-clay hover:bg-clay-hover disabled:bg-line disabled:cursor-not-allowed text-white font-semibold text-sm transition-colors touch-manipulation focus-ring active:scale-[0.98] flex items-center justify-center gap-2"
             >
               <MessageSquare className="w-4 h-4" aria-hidden="true" />
               {isOwner ? 'This is your listing' : sold ? 'Sold' : 'Message seller'}

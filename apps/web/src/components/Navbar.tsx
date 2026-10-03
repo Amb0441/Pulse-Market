@@ -1,5 +1,5 @@
 import React from 'react';
-import { Map, Grid, MessageSquare, User as UserIcon, Plus, Bell, LogOut, MapPin, ChevronDown, Activity } from 'lucide-react';
+import { Map, Grid, MessageSquare, User as UserIcon, Plus, Bell, LogOut, MapPin, Activity } from 'lucide-react';
 import { UserProfile } from '../types';
 import { describeArea } from '../lib/geo';
 
@@ -48,39 +48,41 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <>
-      <div className="sticky top-0 z-[calc(var(--z-sticky)+1)] w-full bg-clay/10 border-b border-clay/20 px-4 py-2 text-center text-xs font-medium text-clay">
+      {/* Desktop-only privacy strip — on phones it reads as website chrome. */}
+      <div className="hidden lg:block shrink-0 z-[calc(var(--z-sticky)+1)] w-full bg-clay/10 border-b border-clay/20 px-4 py-2 text-center text-xs font-medium text-clay">
         <MapPin className="w-3 h-3 inline-block mr-1.5 text-clay" aria-hidden="true" />
         Your location is private — listings show an area, never your exact address
       </div>
 
-      <header className="sticky top-0 z-[var(--z-sticky)] w-full bg-paper/95 backdrop-blur border-b border-line transition-smooth">
-        <div className="max-w-7xl mx-auto h-16 sm:h-18 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
+      {/* Single continuous top bar: safe-area + brand + actions (native app chrome). */}
+      <header className="shrink-0 z-[var(--z-sticky)] w-full bg-paper/95 backdrop-blur border-b border-line transition-smooth safe-top">
+        <div className="max-w-7xl mx-auto h-14 lg:h-16 px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-3">
           {/* Wordmark and area line are sibling buttons: nesting <button> in
               <button> is invalid HTML, and the area click would also navigate. */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
             <button
               onClick={() => setActiveTab('feed')}
               className="flex-shrink-0 text-left group touch-manipulation"
               aria-label="Pulse home"
             >
-              <Activity className="w-8 h-8 text-clay group-hover:text-clay-hover transition-colors" aria-hidden="true" />
+              <Activity className="w-7 h-7 sm:w-8 sm:h-8 text-clay group-hover:text-clay-hover transition-colors" aria-hidden="true" />
             </button>
 
-            <div className="hidden sm:flex flex-col items-start leading-none">
+            <div className="flex flex-col items-start leading-none min-w-0">
               <button
                 onClick={() => setActiveTab('feed')}
-                className="font-display text-xl sm:text-2xl font-bold text-ink hover:text-clay transition-colors focus-ring rounded-sm touch-manipulation"
+                className="font-display text-lg sm:text-xl lg:text-2xl font-bold text-ink hover:text-clay transition-colors focus-ring rounded-sm touch-manipulation"
               >
                 Pulse
               </button>
               <button
                 type="button"
                 onClick={onEditLocation}
-                className="mt-1 flex items-center gap-1 text-[11px] font-medium text-ink-soft hover:text-clay transition-colors focus-ring rounded-sm touch-manipulation"
+                className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-ink-soft hover:text-clay transition-colors focus-ring rounded-sm touch-manipulation max-w-[160px] sm:max-w-[200px]"
                 aria-label={`Your area: ${locationText}. Change your location`}
               >
                 <MapPin className="w-3 h-3 text-clay flex-shrink-0" aria-hidden="true" />
-                <span className="truncate max-w-[140px]">{locationText}</span>
+                <span className="truncate">{locationText}</span>
               </button>
             </div>
           </div>
@@ -100,7 +102,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   aria-label={active ? `${label}, current tab` : label}
                 >
                   <Icon className={`w-4 h-4 ${active ? 'stroke-[2.5]' : 'stroke-2'}`} aria-hidden="true" />
-                  <span className="hidden sm:inline">{label}</span>
+                  <span>{label}</span>
                   {count > 0 && (
                     <span className="min-w-5 h-5 px-1.5 rounded-full bg-clay text-white text-[10px] font-bold grid place-items-center animate-scale-in" aria-label={`${count} unread messages`}>
                       {count > 9 ? '9+' : count}
@@ -117,46 +119,48 @@ export const Navbar: React.FC<NavbarProps> = ({
             })}
           </nav>
 
-          <div className="flex items-center gap-1.5 lg:gap-2">
+          <div className="flex items-center gap-1 shrink-0">
             <button
               onClick={onOpenNotifications}
               title="Notifications"
-              className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-full grid place-items-center text-ink hover:bg-sand transition-colors touch-manipulation focus-ring"
+              className="relative w-11 h-11 rounded-full grid place-items-center text-ink hover:bg-sand transition-colors touch-manipulation focus-ring"
               aria-label={`Notifications${unreadNotificationsCount > 0 ? `, ${unreadNotificationsCount} unread` : ''}`}
             >
-              <Bell className="w-[18px] h-[18px] sm:w-5 sm:h-5" aria-hidden="true" />
+              <Bell className="w-5 h-5" aria-hidden="true" />
               {unreadNotificationsCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-clay ring-2 ring-paper animate-pulse-soft" aria-hidden="true" />
+                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-clay ring-2 ring-paper animate-pulse-soft" aria-hidden="true" />
               )}
             </button>
 
             <button
               onClick={onOpenSellModal}
-              className="hidden sm:flex items-center gap-1.5 h-10 sm:h-11 pl-4 pr-5 rounded-full bg-clay hover:bg-clay-hover text-white text-sm font-semibold transition-colors touch-manipulation focus-ring active:scale-[0.98]"
+              className="hidden sm:flex items-center gap-1.5 h-11 pl-4 pr-5 rounded-full bg-clay hover:bg-clay-hover text-white text-sm font-semibold transition-colors touch-manipulation focus-ring active:scale-[0.98]"
               aria-label="Create new listing"
             >
               <Plus className="w-4 h-4" aria-hidden="true" />
               <span>Sell</span>
             </button>
 
+            {/* Sign-out lives on Profile for phones; keep it here on large screens. */}
             <button
               onClick={onSignOut}
               title="Sign out"
-              className="w-10 h-10 rounded-full grid place-items-center text-ink-soft hover:text-clay hover:bg-sand transition-colors touch-manipulation focus-ring"
+              className="hidden lg:grid w-11 h-11 rounded-full place-items-center text-ink-soft hover:text-clay hover:bg-sand transition-colors touch-manipulation focus-ring"
               aria-label="Sign out"
             >
-              <LogOut className="w-[18px] h-[18px] sm:w-5 sm:h-5" aria-hidden="true" />
+              <LogOut className="w-5 h-5" aria-hidden="true" />
             </button>
           </div>
         </div>
       </header>
 
       <nav
-        className="lg:hidden fixed bottom-0 inset-x-0 z-[var(--z-sticky)] bg-card border-t border-line safe-bottom animate-slide-up"
+        className="lg:hidden fixed bottom-0 inset-x-0 z-[var(--z-sticky)] bg-card/95 backdrop-blur border-t border-line"
         role="navigation"
         aria-label="Mobile navigation"
+        style={{ height: 'var(--mobile-nav-height)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
-        <div className="grid grid-cols-5 items-end px-2 pt-2 pb-2">
+        <div className="grid grid-cols-5 items-end h-[3.75rem] px-1 pb-1">
           {[TABS[0], TABS[1]].map(({ id, label, Icon }) => (
             <MobileTab
               key={id}
@@ -170,7 +174,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={onOpenSellModal}
             aria-label="Sell an item"
-            className="justify-self-center -mt-4 w-14 h-14 rounded-full bg-clay text-white grid place-items-center ring-4 ring-card shadow-lg active:scale-95 transition-transform touch-manipulation focus-ring"
+            className="justify-self-center -mt-5 w-14 h-14 rounded-full bg-clay text-white grid place-items-center ring-4 ring-card shadow-lg active:scale-95 transition-transform touch-manipulation focus-ring"
           >
             <Plus className="w-7 h-7" strokeWidth={2.5} aria-hidden="true" />
           </button>
@@ -200,16 +204,16 @@ const MobileTab: React.FC<{
 }> = ({ active, onClick, label, Icon, count = 0 }) => (
   <button
     onClick={onClick}
-    className={`relative flex flex-col items-center gap-1 py-1.5 transition-colors touch-manipulation ${
+    className={`relative flex flex-col items-center justify-center gap-0.5 min-h-12 py-1 transition-colors touch-manipulation ${
       active ? 'text-clay' : 'text-ink-soft'
-    } focus-ring rounded-full`}
+    } focus-ring rounded-xl`}
     aria-current={active ? 'page' : undefined}
     aria-label={active ? `${label}, current tab` : label}
   >
-    <Icon className={`w-5 h-5 ${active ? 'stroke-[2.5]' : 'stroke-2'}`} aria-hidden="true" />
-    <span className="text-[10px] font-semibold">{label}</span>
+    <Icon className={`w-6 h-6 ${active ? 'stroke-[2.5]' : 'stroke-2'}`} aria-hidden="true" />
+    <span className="text-[10px] font-semibold leading-none">{label}</span>
     {count > 0 && (
-      <span className="absolute top-0 right-2 min-w-4 h-4 px-1 rounded-full bg-clay text-white text-[9px] font-bold grid place-items-center animate-scale-in" aria-label={`${count} unread`}>
+      <span className="absolute top-0.5 right-1.5 min-w-4 h-4 px-1 rounded-full bg-clay text-white text-[9px] font-bold grid place-items-center animate-scale-in" aria-label={`${count} unread`}>
         {count > 9 ? '9+' : count}
       </span>
     )}

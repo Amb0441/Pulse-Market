@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Listing, UserProfile, Review, ItemStatus } from '../types';
-import { Package, Heart, Star, Trash2, Eye, Clock, Settings, Plus, MapPin } from 'lucide-react';
+import { Package, Heart, Star, Trash2, Eye, Clock, Settings, Plus, MapPin, LogOut } from 'lucide-react';
 import { formatRelative, formatDistance, formatPrice, formatYear } from '../lib/format';
 import { ListingImage } from './ListingImage';
 
@@ -27,6 +27,8 @@ interface DashboardProps {
   onOpenSettings: () => void;
   /** Opens the sell form, used by the empty state on the listings tab. */
   onOpenSellModal?: () => void;
+  /** Ends the session; shown on Profile because the mobile top bar has no sign-out. */
+  onSignOut?: () => void;
   theme: 'dark' | 'light';
 }
 
@@ -81,6 +83,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onSelectListing,
   onOpenSettings,
   onOpenSellModal,
+  onSignOut,
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>('listings');
 
@@ -115,29 +118,29 @@ export const Dashboard: React.FC<DashboardProps> = ({
   ];
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-28 md:pb-10 no-scrollbar">
-      <header className="flex items-start gap-5 mb-8 animate-rise p-5 sm:p-6 bg-card rounded-2xl shadow-sm">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-8 pb-6 sm:pb-10 mobile-content-pad no-scrollbar">
+      <header className="flex items-start gap-4 sm:gap-5 mb-5 sm:mb-8 animate-rise p-4 sm:p-6 bg-card rounded-2xl shadow-sm">
         <div className="relative">
           {user.avatar ? (
             <img
               src={user.avatar}
               alt=""
-              className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover ring-2 ring-ink ring-offset-4 ring-offset-paper"
+              className="w-16 h-16 sm:w-24 sm:h-24 rounded-full object-cover ring-2 ring-ink ring-offset-2 sm:ring-offset-4 ring-offset-paper"
             />
           ) : (
             <div
-              className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-sand grid place-items-center font-display text-3xl font-bold text-ink-soft ring-2 ring-ink ring-offset-4 ring-offset-paper"
+              className="w-16 h-16 sm:w-24 sm:h-24 rounded-full bg-sand grid place-items-center font-display text-2xl sm:text-3xl font-bold text-ink-soft ring-2 ring-ink ring-offset-2 sm:ring-offset-4 ring-offset-paper"
               aria-hidden="true"
             >
               {user.name.charAt(0).toUpperCase() || '?'}
             </div>
           )}
         </div>
-        <div className="flex-1 min-w-0 pt-1">
+        <div className="flex-1 min-w-0 pt-0.5 sm:pt-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="font-display text-2xl sm:text-3xl font-bold text-ink truncate">{user.name}</h1>
+            <h1 className="font-display text-xl sm:text-3xl font-bold text-ink truncate">{user.name}</h1>
           </div>
-          <p className="mt-1.5 text-sm text-ink-soft flex items-center gap-1">
+          <p className="mt-1 text-sm text-ink-soft flex items-center gap-1">
             <MapPin className="w-3.5 h-3.5 text-clay flex-shrink-0" aria-hidden="true" />
             {user.neighborhood || 'Location not set'}
             {formatYear(user.joinedDate) && <> · Member since {formatYear(user.joinedDate)}</>}
@@ -158,15 +161,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
           <button
             onClick={onOpenSettings}
-            className="w-10 h-10 rounded-full grid place-items-center text-ink-soft hover:text-clay hover:bg-sand transition-colors touch-manipulation focus-ring"
+            className="w-11 h-11 rounded-full grid place-items-center text-ink-soft hover:text-clay hover:bg-sand transition-colors touch-manipulation focus-ring"
             aria-label="Settings"
             title="Account settings"
           >
             <Settings className="w-5 h-5" aria-hidden="true" />
           </button>
+          {onSignOut && (
+            <button
+              type="button"
+              onClick={onSignOut}
+              className="lg:hidden w-11 h-11 rounded-full grid place-items-center text-ink-soft hover:text-clay hover:bg-sand transition-colors touch-manipulation focus-ring"
+              aria-label="Sign out"
+              title="Sign out"
+            >
+              <LogOut className="w-5 h-5" aria-hidden="true" />
+            </button>
+          )}
         </div>
       </header>
 

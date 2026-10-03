@@ -111,10 +111,10 @@ export const MarketFeed: React.FC<MarketFeedProps> = ({
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-28 md:pb-10">
-      <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-8 pb-6 sm:pb-10 mobile-content-pad">
+      <div className="mb-5 sm:mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="font-display text-3xl sm:text-4xl font-bold text-ink">Around you</h1>
+          <h1 className="font-display text-2xl sm:text-4xl font-bold text-ink">Around you</h1>
           <p className="mt-1 text-sm text-ink-soft">
             {inRangeCount === 0
               ? `No items within ${selectedRadiusKm} km`
@@ -139,15 +139,17 @@ export const MarketFeed: React.FC<MarketFeedProps> = ({
         )}
       </div>
 
-      <div className="space-y-4 mb-8">
+      <div className="space-y-3 sm:space-y-4 mb-5 sm:mb-8">
         <div className="relative">
-          <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-ink-soft" aria-hidden="true" />
+          <Search className="absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-ink-soft" aria-hidden="true" />
           <input
-            type="text"
+            type="search"
+            enterKeyHint="search"
+            autoComplete="off"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search chairs, bikes, espresso machines..."
-            className="w-full h-14 pl-14 pr-14 rounded-full border border-line bg-card text-base placeholder:text-ink-soft/60 focus:outline-none focus:border-ink focus:ring-2 focus:ring-clay/20 transition-smooth"
+            className="w-full h-12 sm:h-14 pl-12 sm:pl-14 pr-12 sm:pr-14 rounded-full border border-line bg-card text-base placeholder:text-ink-soft/60 focus:outline-none focus:border-ink focus:ring-2 focus:ring-clay/20 transition-smooth"
             aria-label="Search listings"
           />
           {searchQuery && (

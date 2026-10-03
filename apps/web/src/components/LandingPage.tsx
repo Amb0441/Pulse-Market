@@ -138,8 +138,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onAuthenticated, theme
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-paper text-ink">
-      <header className="w-full px-4 sm:px-8 h-16 flex items-center justify-between border-b border-line shrink-0 bg-paper/95 backdrop-blur">
+    <div className="app-height overflow-y-auto overscroll-none flex flex-col bg-paper text-ink">
+      <header className="w-full px-4 sm:px-8 h-16 flex items-center justify-between border-b border-line shrink-0 bg-paper/95 backdrop-blur safe-top">
         <div className="flex items-center gap-2.5 sm:gap-3">
           <span className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-clay grid place-items-center shadow-[2px_2px_0_var(--color-ink)] shrink-0">
             <Activity className="w-5 h-5 text-white" aria-hidden="true" strokeWidth={2.5} />
