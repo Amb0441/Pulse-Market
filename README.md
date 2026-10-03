@@ -248,6 +248,8 @@ Render injects `PORT`; do not set it to 3000.
 | Build output directory | `dist` |
 | Node version | `22` (from `apps/web/.nvmrc`) |
 
+The repo is an npm workspace. Pages still sees the **root** `package-lock.json`, so that lockfile must stay in sync with `package.json` (`npm install` at the repo root). Do not use a stale root lockfile or `npm ci` fails with esbuild / turbo mismatches.
+
 3. Environment variables (Production **and** Preview), then deploy:
 
 | Variable | Public | Value |
