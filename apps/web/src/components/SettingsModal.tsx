@@ -208,7 +208,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, user, onCl
                 onChange={(e) => setUsername(e.target.value)}
                 maxLength={30}
                 autoComplete="username"
-                className="mt-1.5 w-full h-11 px-3.5 rounded-lg border border-line bg-paper text-sm text-ink placeholder:text-ink-soft/60 focus:outline-none focus:border-ink focus:ring-2 focus:ring-clay/20 transition-smooth"
+                className="mt-1.5 w-full h-12 px-3.5 rounded-lg border border-line bg-paper text-base text-ink placeholder:text-ink-soft/60 focus:outline-none focus:border-ink focus:ring-2 focus:ring-clay/20 transition-smooth"
               />
               <span className="mt-1 block text-xs text-ink-muted">
                 3-30 characters. Letters, numbers, and _ . -
@@ -223,7 +223,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, user, onCl
                 onChange={(e) => setArea(e.target.value)}
                 maxLength={MAX_AREA}
                 placeholder="Baguio City, Benguet"
-                className="mt-1.5 w-full h-11 px-3.5 rounded-lg border border-line bg-paper text-sm text-ink placeholder:text-ink-soft/60 focus:outline-none focus:border-ink focus:ring-2 focus:ring-clay/20 transition-smooth"
+                className="mt-1.5 w-full h-12 px-3.5 rounded-lg border border-line bg-paper text-base text-ink placeholder:text-ink-soft/60 focus:outline-none focus:border-ink focus:ring-2 focus:ring-clay/20 transition-smooth"
               />
               <span className="mt-1 block text-xs text-ink-muted">
                 A label for your area. Move your map pin from the navbar.
@@ -238,7 +238,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, user, onCl
                 rows={4}
                 maxLength={MAX_BIO}
                 placeholder="Tell neighbors a little about yourself."
-                className="mt-1.5 w-full px-3.5 py-3 rounded-lg border border-line bg-paper text-sm text-ink placeholder:text-ink-soft/60 focus:outline-none focus:border-ink focus:ring-2 focus:ring-clay/20 resize-none transition-smooth"
+                className="mt-1.5 w-full px-3.5 py-3 rounded-lg border border-line bg-paper text-base text-ink placeholder:text-ink-soft/60 focus:outline-none focus:border-ink focus:ring-2 focus:ring-clay/20 resize-none transition-smooth"
               />
               <span className="mt-1 block text-xs text-ink-muted text-right">
                 {bio.length}/{MAX_BIO}

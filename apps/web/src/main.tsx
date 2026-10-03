@@ -3,8 +3,11 @@ import { createRoot } from 'react-dom/client';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { lockMobileViewportZoom } from './lib/lockMobileViewportZoom';
 import App from './App.tsx';
 import './index.css';
+
+lockMobileViewportZoom();
 
 const demoParam = import.meta.env.DEV
   ? new URLSearchParams(window.location.search).get('demo')
@@ -54,6 +57,17 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').then(
       (registration) => {
+        // Home-screen PWAs often stay open; poll for a new worker so logo/zoom
+        // fixes are not stuck behind a stale shell.
+        const check = () => {
+          void registration.update();
+        };
+        check();
+        setInterval(check, 60_000);
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') check();
+        });
+
         registration.addEventListener('updatefound', () => {
           const installing = registration.installing;
           if (!installing) return;

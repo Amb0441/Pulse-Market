@@ -54,8 +54,9 @@ export const Navbar: React.FC<NavbarProps> = ({
         Your location is private — listings show an area, never your exact address
       </div>
 
-      {/* Single continuous top bar: safe-area + brand + actions (native app chrome). */}
-      <header className="shrink-0 z-[var(--z-sticky)] w-full bg-paper/95 backdrop-blur border-b border-line transition-smooth safe-top">
+      {/* Single continuous top bar: safe-area + brand + actions (native app chrome).
+          Opaque paper — backdrop-blur frosted the mark under the iOS status bar in standalone. */}
+      <header className="shrink-0 z-[var(--z-sticky)] w-full bg-paper border-b border-line transition-smooth safe-top">
         <div className="max-w-7xl mx-auto h-14 lg:h-16 px-3 sm:px-6 lg:px-8 flex items-center justify-between gap-3">
           {/* Wordmark and area line are sibling buttons: nesting <button> in
               <button> is invalid HTML, and the area click would also navigate. */}
@@ -155,7 +156,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       </header>
 
       <nav
-        className="lg:hidden fixed bottom-0 inset-x-0 z-[var(--z-sticky)] bg-card/95 backdrop-blur border-t border-line"
+        className="lg:hidden fixed bottom-0 inset-x-0 z-[var(--z-sticky)] bg-card border-t border-line"
         role="navigation"
         aria-label="Mobile navigation"
         style={{ height: 'var(--mobile-nav-height)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
