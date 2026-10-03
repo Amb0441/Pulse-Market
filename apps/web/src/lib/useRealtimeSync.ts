@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { subscribeRealtime, type RealtimeTopic } from '../lib/realtime';
 import { getFreshToken } from '../lib/api';
@@ -6,8 +6,13 @@ import { getFreshToken } from '../lib/api';
 /**
  * Refetches the queries a pushed change affects; marks caches stale so they refetch via the normal API.
  */
-export function useRealtimeSync(enabled: boolean): void {
+export function useRealtimeSync(
+  enabled: boolean,
+  options?: { pauseChatsRef?: { current: boolean } },
+): void {
   const queryClient = useQueryClient();
+  const fallbackRef = useRef(false);
+  const pauseChatsRef = options?.pauseChatsRef ?? fallbackRef;
 
   useEffect(() => {
     if (!enabled) return;
@@ -37,9 +42,10 @@ export function useRealtimeSync(enabled: boolean): void {
         refetch([['listings'], ['myListings']]);
       }
 
-      if (topics.has('chats')) {
+      if (topics.has('chats') && !pauseChatsRef.current) {
         // The thread list plus any open thread's messages, not only the inbox
-        // count.
+        // count. Skip while the composer is focused so a push cannot unmount
+        // the open overlay mid-keystroke.
         refetch([['chats'], ['chatMessages']]);
       }
 

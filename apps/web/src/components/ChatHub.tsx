@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ChatThread, ItemStatus } from '../types';
 import { MessageSquare, Send, Star, ArrowLeft, MoreVertical, ExternalLink, Link2, CheckCheck, Bookmark, BadgeCheck } from 'lucide-react';
 import { formatPrice } from '../lib/format';
@@ -31,11 +31,65 @@ interface ChatHubProps {
   openListingId?: string | null;
   /** Called once that thread is on screen, so the parent can clear `openListingId`. */
   onChatOpened?: () => void;
+  /**
+   * Called while the composer is focused so the parent can pause chat polling;
+   * a refetch remounted the old inner Composer and killed IME/keyboard.
+   */
+  onComposerActiveChange?: (active: boolean) => void;
   theme: 'dark' | 'light';
 }
 
 /** A chat stores a single image URL, which is '' when the listing had no photo. */
 const chatImages = (url: string): string[] => (url ? [url] : []);
+
+/**
+ * Module-level so it is not a new component type on every ChatHub render;
+ * an inner Composer remounted on each poll/keystroke and killed IME.
+ */
+function ChatComposer({
+  mobile = false,
+  value,
+  onChange,
+  onSubmit,
+  onActiveChange,
+}: {
+  mobile?: boolean;
+  value: string;
+  onChange: (value: string) => void;
+  onSubmit: (e: React.FormEvent) => void;
+  onActiveChange: (active: boolean) => void;
+}) {
+  return (
+    <form
+      onSubmit={onSubmit}
+      className={`shrink-0 px-3 sm:px-8 lg:px-10 pt-3 border-t border-line bg-card flex items-center gap-2 ${
+        mobile ? 'safe-pb-3' : 'pb-3'
+      }`}
+    >
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={() => onActiveChange(true)}
+        onBlur={() => onActiveChange(false)}
+        placeholder="Write a message..."
+        enterKeyHint="send"
+        autoComplete="off"
+        autoCorrect="on"
+        className="flex-1 h-12 min-h-12 px-4 rounded-full border border-line bg-paper text-base placeholder:text-ink-soft/60 focus:outline-none focus:border-ink focus:ring-2 focus:ring-clay/20 transition-smooth"
+        aria-label="Message"
+      />
+      <button
+        type="submit"
+        disabled={!value.trim()}
+        aria-label="Send message"
+        className="w-12 h-12 min-w-12 rounded-full bg-clay hover:bg-clay-hover disabled:bg-sand disabled:text-ink-muted disabled:cursor-not-allowed text-white grid place-items-center transition-colors touch-manipulation focus-ring active:scale-95"
+      >
+        <Send className="w-5 h-5" aria-hidden="true" />
+      </button>
+    </form>
+  );
+}
 
 export const ChatHub: React.FC<ChatHubProps> = ({
   chats,
@@ -48,6 +102,7 @@ export const ChatHub: React.FC<ChatHubProps> = ({
   onViewListing,
   openListingId,
   onChatOpened,
+  onComposerActiveChange,
 }) => {
   const [activeChatId, setActiveChatId] = useState<string>(chats[0]?.id || '');
   const [inputText, setInputText] = useState('');
@@ -56,13 +111,20 @@ export const ChatHub: React.FC<ChatHubProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const mobileMessagesContainerRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
   const pinnedThread = useRef<ChatThread | null>(null);
+  const composerFocusedRef = useRef(false);
 
   const fromList = chats.find((c) => c.id === activeChatId);
   if (fromList) pinnedThread.current = fromList;
+  // Keep the open thread even if a poll returns [] or drops this row — otherwise
+  // the overlay unmounts and typing looks like the chat vanished.
   const activeChat =
     fromList ??
-    (pinnedThread.current?.id === activeChatId ? pinnedThread.current : null) ??
+    (pinnedThread.current &&
+    (pinnedThread.current.id === activeChatId || mobileChatOpen)
+      ? pinnedThread.current
+      : null) ??
     (!activeChatId ? chats[0] : undefined);
 
   // `chats` is empty on first paint, so the initial state captured no id.
@@ -85,20 +147,23 @@ export const ChatHub: React.FC<ChatHubProps> = ({
   }, [openListingId, chats, onChatOpened]);
 
   // Opening a thread marks it read on the server so the badge survives a refresh.
-  // Keyed on thread id and unread count, not on `chats`, which changes identity per fetch.
+  // Only when unread, so a poll that already shows 0 does not cancel the chats query.
   const activeUnread = activeChat?.unreadCount ?? 0;
   useEffect(() => {
-    if (activeChat) onMarkRead(activeChat.id);
+    if (activeChatId && activeUnread > 0) onMarkRead(activeChatId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeChatId, activeUnread]);
 
   // Scroll only the message scroller — scrollIntoView can walk up to <main> and
-  // yank the thread header off-screen on mobile.
+  // yank the thread header off-screen on mobile. Skip while typing unless the
+  // user is already at the bottom, so the keyboard does not dismiss.
   useEffect(() => {
     const scroller = mobileChatOpen
       ? mobileMessagesContainerRef.current
       : messagesContainerRef.current;
     if (!scroller) return;
+    const fromBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight;
+    if (composerFocusedRef.current && fromBottom > 80) return;
     scroller.scrollTop = scroller.scrollHeight;
   }, [activeChat?.messages.length, activeChatId, mobileChatOpen]);
 
@@ -107,6 +172,40 @@ export const ChatHub: React.FC<ChatHubProps> = ({
   useEffect(() => {
     setShowThreadMenu(false);
   }, [activeChatId]);
+
+  // iOS moves `position: fixed` with the visual viewport when the keyboard
+  // opens; pin the overlay to the visible rectangle so the thread stays on screen.
+  useEffect(() => {
+    if (!mobileChatOpen) return;
+    const node = overlayRef.current;
+    if (!node) return;
+
+    const sync = () => {
+      const vv = window.visualViewport;
+      if (!vv) {
+        node.style.top = '0px';
+        node.style.left = '0px';
+        node.style.width = '100%';
+        node.style.height = '100dvh';
+        return;
+      }
+      node.style.top = `${vv.offsetTop}px`;
+      node.style.left = `${vv.offsetLeft}px`;
+      node.style.width = `${vv.width}px`;
+      node.style.height = `${vv.height}px`;
+    };
+
+    sync();
+    const vv = window.visualViewport;
+    vv?.addEventListener('resize', sync);
+    vv?.addEventListener('scroll', sync);
+    window.addEventListener('orientationchange', sync);
+    return () => {
+      vv?.removeEventListener('resize', sync);
+      vv?.removeEventListener('scroll', sync);
+      window.removeEventListener('orientationchange', sync);
+    };
+  }, [mobileChatOpen]);
 
   // Full-screen thread should feel like its own app scene: no document bounce
   // and no accidental scroll of the hub underneath.
@@ -174,7 +273,7 @@ export const ChatHub: React.FC<ChatHubProps> = ({
     }
   };
 
-  if (!chats.length && !activeChat) {
+  if (!chats.length && !activeChat && !mobileChatOpen) {
     return (
       <div className="h-full w-full grid place-items-center px-4 text-center animate-fade-in">
         <div>
@@ -198,9 +297,9 @@ export const ChatHub: React.FC<ChatHubProps> = ({
 
   // Desktop keeps Reserve / Sold in the header; mobile puts them in the ⋮ menu
   // so the top bar stays a single native-style nav row with real touch targets.
-  const StatusActions = () => (
+  const renderStatusActions = () => (
     <div className="flex items-center gap-2 shrink-0">
-      {isSeller && activeChat.listingStatus === 'active' && (
+      {isSeller && activeChat?.listingStatus === 'active' && (
         <button
           onClick={() => handleStatusChange('reserved')}
           className="h-9 px-4 text-xs rounded-full border border-ink font-semibold hover:bg-mustard hover:border-mustard hover:text-white transition-colors touch-manipulation focus-ring"
@@ -208,7 +307,7 @@ export const ChatHub: React.FC<ChatHubProps> = ({
           Reserve
         </button>
       )}
-      {isSeller && activeChat.listingStatus !== 'sold' && (
+      {isSeller && activeChat?.listingStatus !== 'sold' && (
         <button
           onClick={() => handleStatusChange('sold')}
           className="h-9 px-4 text-xs rounded-full bg-moss text-white font-semibold hover:opacity-90 transition-opacity touch-manipulation focus-ring"
@@ -216,7 +315,7 @@ export const ChatHub: React.FC<ChatHubProps> = ({
           Mark sold
         </button>
       )}
-      {activeChat.listingStatus === 'sold' && !activeChat.reviewCompleted && (
+      {activeChat?.listingStatus === 'sold' && !activeChat.reviewCompleted && (
         <button
           onClick={() => onOpenReviewModal(activeChat)}
           className="h-9 px-4 text-xs rounded-full bg-clay text-white font-semibold flex items-center gap-1.5 touch-manipulation focus-ring"
@@ -228,13 +327,15 @@ export const ChatHub: React.FC<ChatHubProps> = ({
     </div>
   );
 
-  const Messages = ({
-    maxW,
-    scrollerRef,
-  }: {
-    maxW: string;
-    scrollerRef: React.RefObject<HTMLDivElement | null>;
-  }) => (
+  const setComposerActive = useCallback(
+    (active: boolean) => {
+      composerFocusedRef.current = active;
+      onComposerActiveChange?.(active);
+    },
+    [onComposerActiveChange],
+  );
+
+  const renderMessages = (maxW: string, scrollerRef: React.RefObject<HTMLDivElement | null>) => (
     <div
       ref={scrollerRef}
       className="flex-1 min-h-0 overflow-y-auto overscroll-none no-scrollbar px-4 sm:px-8 lg:px-10 py-4 space-y-3"
@@ -274,35 +375,7 @@ export const ChatHub: React.FC<ChatHubProps> = ({
     </div>
   );
 
-  const Composer = ({ mobile = false }: { mobile?: boolean }) => (
-    <form
-      onSubmit={handleSend}
-      className={`shrink-0 px-3 sm:px-8 lg:px-10 pt-3 border-t border-line bg-card flex items-center gap-2 ${
-        mobile ? 'safe-pb-3' : 'pb-3'
-      }`}
-    >
-      <input
-        type="text"
-        value={inputText}
-        onChange={(e) => setInputText(e.target.value)}
-        placeholder="Write a message..."
-        enterKeyHint="send"
-        autoComplete="off"
-        className="flex-1 h-12 min-h-12 px-4 rounded-full border border-line bg-paper text-base sm:text-sm placeholder:text-ink-soft/60 focus:outline-none focus:border-ink focus:ring-2 focus:ring-clay/20 transition-smooth"
-        aria-label="Message"
-      />
-      <button
-        type="submit"
-        disabled={!inputText.trim()}
-        aria-label="Send message"
-        className="w-12 h-12 min-w-12 rounded-full bg-clay hover:bg-clay-hover disabled:bg-sand disabled:text-ink-muted disabled:cursor-not-allowed text-white grid place-items-center transition-colors touch-manipulation focus-ring active:scale-95"
-      >
-        <Send className="w-5 h-5" aria-hidden="true" />
-      </button>
-    </form>
-  );
-
-  const ThreadMenu = ({ mobile = false }: { mobile?: boolean }) => (
+  const renderThreadMenu = (mobile = false) => (
     <div className="relative shrink-0">
       <button
         onClick={() => setShowThreadMenu((v) => !v)}
@@ -323,7 +396,7 @@ export const ChatHub: React.FC<ChatHubProps> = ({
             aria-label="Conversation options"
             className="absolute right-0 top-full mt-1 z-20 w-56 py-1 rounded-xl border border-line bg-card shadow-lg animate-scale-in origin-top-right"
           >
-            {mobile && isSeller && activeChat.listingStatus === 'active' && (
+            {mobile && isSeller && activeChat?.listingStatus === 'active' && (
               <button
                 role="menuitem"
                 onClick={() => handleStatusChange('reserved')}
@@ -333,7 +406,7 @@ export const ChatHub: React.FC<ChatHubProps> = ({
                 Reserve listing
               </button>
             )}
-            {mobile && isSeller && activeChat.listingStatus !== 'sold' && (
+            {mobile && isSeller && activeChat?.listingStatus !== 'sold' && (
               <button
                 role="menuitem"
                 onClick={() => handleStatusChange('sold')}
@@ -343,7 +416,7 @@ export const ChatHub: React.FC<ChatHubProps> = ({
                 Mark as sold
               </button>
             )}
-            {mobile && activeChat.listingStatus === 'sold' && !activeChat.reviewCompleted && (
+            {mobile && activeChat?.listingStatus === 'sold' && !activeChat.reviewCompleted && (
               <button
                 role="menuitem"
                 onClick={() => {
@@ -388,7 +461,7 @@ export const ChatHub: React.FC<ChatHubProps> = ({
     </div>
   );
 
-  const ChatHeader = ({ back = false }: { back?: boolean }) => (
+  const renderHeader = (back = false) => (
     <div
       className={`shrink-0 px-3 sm:px-8 lg:px-10 pb-3 border-b border-line flex items-center justify-between gap-2 bg-card ${
         back ? 'safe-pt-header' : 'pt-3'
@@ -405,7 +478,7 @@ export const ChatHub: React.FC<ChatHubProps> = ({
           </button>
         )}
         <ListingImage
-          images={chatImages(activeChat.listingImage)}
+          images={chatImages(activeChat?.listingImage ?? '')}
           alt=""
           className="w-10 h-10 rounded-lg shrink-0"
         />
@@ -414,19 +487,19 @@ export const ChatHub: React.FC<ChatHubProps> = ({
             id={back ? 'mobile-chat-title' : undefined}
             className="font-semibold text-sm truncate text-ink"
           >
-            {activeChat.listingTitle}
+            {activeChat?.listingTitle}
           </div>
           <div className="text-xs text-ink-soft flex items-center gap-1.5 min-w-0">
-            <span className="font-semibold text-ink shrink-0">{formatPrice(activeChat.listingPrice)}</span>
+            <span className="font-semibold text-ink shrink-0">{formatPrice(activeChat?.listingPrice ?? 0)}</span>
             <span className="uppercase tracking-wider text-[10px] font-bold px-2 py-0.5 rounded-full bg-clay/10 text-clay shrink-0">
-              {activeChat.listingStatus}
+              {activeChat?.listingStatus}
             </span>
           </div>
         </div>
       </div>
       <div className="flex items-center gap-1 shrink-0">
-        {!back && <StatusActions />}
-        <ThreadMenu mobile={back} />
+        {!back && renderStatusActions()}
+        {renderThreadMenu(back)}
       </div>
     </div>
   );
@@ -484,9 +557,14 @@ export const ChatHub: React.FC<ChatHubProps> = ({
         <div className="hidden md:flex flex-col h-full min-h-0 min-w-0 bg-paper">
           {activeChat ? (
             <>
-              <ChatHeader />
-              <Messages maxW="max-w-[min(40rem,80%)]" scrollerRef={messagesContainerRef} />
-              <Composer />
+              {renderHeader()}
+              {renderMessages('max-w-[min(40rem,80%)]', messagesContainerRef)}
+              <ChatComposer
+                value={inputText}
+                onChange={setInputText}
+                onSubmit={handleSend}
+                onActiveChange={setComposerActive}
+              />
             </>
           ) : (
             <div className="flex-1 grid place-items-center px-6 text-center text-sm text-ink-soft">
@@ -498,14 +576,22 @@ export const ChatHub: React.FC<ChatHubProps> = ({
 
       {mobileChatOpen && activeChat && (
         <div
-          className="fixed inset-0 z-[var(--z-modal)] flex flex-col md:hidden bg-paper app-height overscroll-none animate-slide-up"
+          ref={overlayRef}
+          className="fixed top-0 left-0 z-[var(--z-modal)] flex h-[100dvh] w-full flex-col md:hidden bg-paper overscroll-none"
           role="dialog"
           aria-modal="true"
           aria-labelledby="mobile-chat-title"
+          data-chat-overlay="true"
         >
-          <ChatHeader back />
-          <Messages maxW="max-w-[85%]" scrollerRef={mobileMessagesContainerRef} />
-          <Composer mobile />
+          {renderHeader(true)}
+          {renderMessages('max-w-[85%]', mobileMessagesContainerRef)}
+          <ChatComposer
+            mobile
+            value={inputText}
+            onChange={setInputText}
+            onSubmit={handleSend}
+            onActiveChange={setComposerActive}
+          />
         </div>
       )}
     </div>

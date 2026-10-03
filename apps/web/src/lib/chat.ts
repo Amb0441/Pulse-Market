@@ -52,5 +52,12 @@ export function toChatThread(row: ApiConversation): ChatThread {
 }
 
 export function toChatThreads(rows: ApiConversation[] | null | undefined): ChatThread[] {
-  return (rows ?? []).map(toChatThread);
+  return (rows ?? []).flatMap((row) => {
+    if (!row?.id) return [];
+    try {
+      return [toChatThread(row)];
+    } catch {
+      return [];
+    }
+  });
 }

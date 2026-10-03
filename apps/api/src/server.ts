@@ -334,30 +334,6 @@ app.delete(
 
 // --- listings --------------------------------------------------------------
 
-/** Metres in a degree of latitude, at the equator. Distance shrinks by cos(lat). */
-const KM_PER_DEGREE_LAT = 110.574;
-
-/** Used when the caller sends a position but no radius. */
-const DEFAULT_RADIUS_KM = 5;
-
-/**
- * Lat/lng box containing a circle of `radiusKm`, so the range filter can use an
- * index (no PostGIS here); the client re-filters with exact haversine distance.
- */
-function boundingBox(lat: number, lng: number, radiusKm: number) {
-  const dLat = radiusKm / KM_PER_DEGREE_LAT;
-  // Longitude degrees shrink towards the poles: scale by cos(lat) and clamp,
-  // since dividing by ~0 would turn the filter into a full-table scan.
-  const cos = Math.cos((lat * Math.PI) / 180);
-  const dLng = radiusKm / (KM_PER_DEGREE_LAT * Math.max(Math.abs(cos), 0.01));
-  return {
-    minLat: lat - dLat,
-    maxLat: lat + dLat,
-    minLng: lng - dLng,
-    maxLng: lng + dLng,
-  };
-}
-
 /**
  * Statuses a listing is visible under. Sold and reserved stay visible so a sold
  * item doesn't vanish from the feed or dashboard; `archived` stays hidden.
@@ -387,7 +363,7 @@ app.get(
   '/api/listings',
   validate(listListingsQuerySchema, 'query'),
   asyncHandler(async (req, res) => {
-    const { limit, category, lat, lng, radius } = validated(req, listListingsQuerySchema, 'query');
+    const { limit, category } = validated(req, listListingsQuerySchema, 'query');
 
     let query = supabase
       .from('listings')
@@ -400,15 +376,9 @@ app.get(
 
     if (category) query = query.eq('category', category);
 
-    // Only narrow by position when the viewer supplied one; otherwise newest-first.
-    if (lat !== undefined && lng !== undefined) {
-      const box = boundingBox(lat, lng, radius ?? DEFAULT_RADIUS_KM);
-      query = query
-        .gte('lat', box.minLat)
-        .lte('lat', box.maxLat)
-        .gte('lng', box.minLng)
-        .lte('lng', box.maxLng);
-    }
+    // Do not clip to the viewer's 50 km box. That made the feed empty for anyone
+    // whose pin was not near existing items (your account in range, theirs not).
+    // The 1–10 km chips group nearby vs farther on the client.
 
     const { data, error } = await query;
     if (error) throw AppError.internal('Could not load listings');
@@ -716,7 +686,7 @@ app.get(
       .from('conversations')
       .select('id, listing_id, buyer_id, seller_id, last_message_at')
       .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
-      .order('last_message_at', { ascending: false, nullsFirst: false });
+      .order('last_message_at', { ascending: false });
 
     if (error) {
       audit.warn('conversations_load_failed', {
@@ -757,7 +727,6 @@ app.get(
         code: messagesError.code,
         message: messagesError.message,
       });
-      throw AppError.internal('Could not load messages');
     }
 
     const listingsById = new Map((listingRows ?? []).map((row) => [row.id, row]));
@@ -888,6 +857,7 @@ app.post(
     const user = requireUser(req);
     const { id } = validated(req, uuidParam, 'params');
     const { body } = req.body as { body: string };
+    await ensureProfile(user);
     const conversation = await requireConversation(id, user.id);
 
     const { data: message, error } = await supabase
@@ -896,7 +866,15 @@ app.post(
       .select('id, conversation_id, sender_id, body, read_at, created_at')
       .single();
 
-    if (error) throw AppError.badRequest('Could not send message');
+    if (error) {
+      if (error.code === '23503') {
+        throw AppError.badRequest(
+          'Your account profile is not ready yet. Sign out and sign in again, then retry.',
+          'PROFILE_MISSING',
+        );
+      }
+      throw AppError.internal('Could not send message');
+    }
 
     void notify({
       user_id: counterpartId(conversation, user.id),

@@ -38,9 +38,14 @@ export function lockMobileViewportZoom(): void {
       const tag = target.tagName.toLowerCase();
       if (tag === 'input' || tag === 'textarea' || tag === 'select') {
         apply();
-        // If something already scaled the visual viewport, snap back.
-        if (window.visualViewport && window.visualViewport.scale > 1.01) {
-          apply();
+        // If something already scaled the visual viewport, snap back — but never
+        // while a chat overlay is focused; scrollTo(0,0) on iOS sends fixed
+        // threads off-screen.
+        if (
+          window.visualViewport &&
+          window.visualViewport.scale > 1.01 &&
+          !target.closest('[data-chat-overlay], [role="dialog"]')
+        ) {
           window.scrollTo(0, 0);
         }
       }

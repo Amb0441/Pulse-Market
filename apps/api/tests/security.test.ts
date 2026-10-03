@@ -508,3 +508,20 @@ describe('createReviewSchema', () => {
     );
   });
 });
+
+describe('listing feed query', () => {
+  test('accepts pins that would have 400ed the marketplace for other members', async () => {
+    const { listListingsQuerySchema } = await import('../src/schemas.js');
+
+    expect(listListingsQuerySchema.safeParse({ radius: '50', lat: '0', lng: '0', limit: '100' }).success).toBe(
+      true,
+    );
+    expect(listListingsQuerySchema.safeParse({ radius: '50', lat: '16.4', limit: '100' }).success).toBe(true);
+    expect(listListingsQuerySchema.safeParse({ category: 'All' }).success).toBe(true);
+    expect(listListingsQuerySchema.safeParse({ radius: '51', lat: '16.4', lng: '120.6' }).success).toBe(true);
+
+    const dropped = listListingsQuerySchema.parse({ lat: '16.4', limit: '100' });
+    expect(dropped.lat).toBeUndefined();
+    expect(dropped.lng).toBeUndefined();
+  });
+});

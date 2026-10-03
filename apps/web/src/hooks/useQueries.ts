@@ -197,13 +197,24 @@ export function useToggleFavorite() {
 /**
  * The signed-in user's conversation list; disabled without a token, since it could only 401.
  */
-export function useChats() {
+export function useChats(options?: { pausePollRef?: { current: boolean } }) {
+  const pausePollRef = options?.pausePollRef;
+  const qc = useQueryClient();
   return useQuery<ChatThread[]>({
     queryKey: ['chats'],
-    queryFn: async () => toChatThreads((await api.chats.list()) as ApiConversation[]),
+    queryFn: async () => {
+      const rows = await api.chats.list();
+      if (!Array.isArray(rows)) {
+        return qc.getQueryData<ChatThread[]>(['chats']) ?? [];
+      }
+      return toChatThreads(rows as ApiConversation[]);
+    },
     enabled: !!getToken(),
     placeholderData: keepPreviousData,
-    refetchInterval: 10_000,
+    refetchInterval: () => (pausePollRef?.current ? false : 10_000),
+    refetchOnWindowFocus: () => !pausePollRef?.current,
+    // A failed poll must not blank the open thread.
+    retry: 1,
   });
 }
 
@@ -322,7 +333,6 @@ export function useMarkChatRead() {
     mutationFn: (conversationId: string) => api.chats.markRead(conversationId),
     meta: { inline: true },
     onMutate: async (conversationId) => {
-      await qc.cancelQueries({ queryKey: ['chats'] });
       const previous = qc.getQueryData<ChatThread[]>(['chats']);
 
       qc.setQueryData<ChatThread[]>(['chats'], (old) =>

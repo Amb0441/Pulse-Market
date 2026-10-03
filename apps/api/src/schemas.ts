@@ -190,22 +190,45 @@ export const updateListingSchema = z
   .superRefine(latLngPair);
 
 /**
- * Feed query; viewer `lat`/`lng` narrow the DB to a bounding box - see KM_PER_DEGREE_LAT in server.ts.
+ * Query numbers from Express (`req.query` is strings, sometimes arrays). Invalid
+ * values become `undefined` instead of 400ing the whole feed.
+ */
+const queryNumber = z.preprocess((v) => {
+  if (v === undefined || v === null || v === '') return undefined;
+  const raw = Array.isArray(v) ? v[0] : v;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : undefined;
+}, z.number().optional());
+
+/**
+ * Feed query. Must not 400: another member's pin (0,0, one-sided, outside the
+ * Philippines, `category=All`) used to blank the marketplace for everyone but you.
+ * Distance grouping is client-side; lat/lng here are optional hints.
  */
 export const listListingsQuerySchema = z
   .object({
-    radius: z.coerce
-      .number()
-      .min(0.5, 'Radius must be at least 0.5 km')
-      .max(50, 'Radius cannot be more than 50 km')
-      .optional(),
-    lat: latField.optional(),
-    lng: lngField.optional(),
-    category: categorySchema.optional(),
-    limit: z.coerce.number().int().min(1).max(100).optional().default(50),
-    cursor: z.string().uuid().optional(),
+    radius: queryNumber,
+    lat: queryNumber,
+    lng: queryNumber,
+    category: z.string().optional(),
+    limit: queryNumber,
+    cursor: z.string().optional(),
   })
-  .superRefine(latLngPair);
+  .transform((v) => {
+    const latOk = typeof v.lat === 'number' && v.lat >= -90 && v.lat <= 90;
+    const lngOk = typeof v.lng === 'number' && v.lng >= -180 && v.lng <= 180;
+    const category = v.category ? categorySchema.safeParse(v.category) : undefined;
+    const cursor = v.cursor ? z.string().uuid().safeParse(v.cursor) : undefined;
+    return {
+      lat: latOk && lngOk ? v.lat : undefined,
+      lng: latOk && lngOk ? v.lng : undefined,
+      radius:
+        typeof v.radius === 'number' ? Math.min(50, Math.max(0.5, v.radius)) : undefined,
+      category: category?.success ? category.data : undefined,
+      limit: typeof v.limit === 'number' ? Math.min(100, Math.max(1, Math.round(v.limit))) : 50,
+      cursor: cursor?.success ? cursor.data : undefined,
+    };
+  });
 
 // --- chat -------------------------------------------------------------------
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { LandingPage } from './components/LandingPage';
 import { Navbar } from './components/Navbar';
 import { MapView } from './components/MapView';
@@ -48,6 +48,9 @@ export default function App() {
 
   // Declared before useListings below, which reads it to build the request.
   const [selectedRadiusKm, setSelectedRadiusKm] = useState(3);
+  // Ref rather than state: focusing the composer must not re-render the app
+  // (that remounted the input and stopped IME mid-keystroke).
+  const chatComposerActiveRef = useRef(false);
 
   // Real data only: no mock dataset, so an empty database renders empty states
   // rather than placeholder listings.
@@ -55,17 +58,21 @@ export default function App() {
 
   // Live push instead of waiting for the next poll. Needs `user` because the
   // stream is authenticated; opening it early would only spend a reconnect.
-  useRealtimeSync(!!user);
+  useRealtimeSync(!!user, { pauseChatsRef: chatComposerActiveRef });
 
   /**
    * Fetched in a wide box around the pin so farther listings still arrive;
    * the 1–10 km chips only group nearby vs not nearby. Without a pin, newest first.
    */
-  const hasPin = user?.lat !== undefined && user?.lng !== undefined;
+  const hasPin =
+    typeof user?.lat === 'number' &&
+    Number.isFinite(user.lat) &&
+    typeof user?.lng === 'number' &&
+    Number.isFinite(user.lng);
   const listingsQuery = useListings(
     hasPin
       ? { radius: FEED_FETCH_RADIUS_KM, lat: user.lat, lng: user.lng, limit: 100 }
-      : undefined,
+      : { limit: 100 },
   );
   const { data: fetchedListings, isLoading, isError, error: listingsError, refetch } =
     listingsQuery;
@@ -97,7 +104,9 @@ export default function App() {
 
   // Conversations are server-backed; the mutations invalidate `['chats']` and the
   // thread list re-renders from the database.
-  const { data: chats = [], isPending: chatsPending } = useChats();
+  const { data: chats = [], isPending: chatsPending } = useChats({
+    pausePollRef: chatComposerActiveRef,
+  });
   const { mutate: startConversation } = useStartConversation();
   const { mutate: sendMessage } = useSendMessage();
   const { mutate: markChatRead } = useMarkChatRead();
@@ -202,6 +211,9 @@ export default function App() {
   // Stable identity so the hub's jump effect does not re-run on every render of
   // this component, which would fight the user's own thread selection.
   const handleChatOpened = useCallback(() => setOpenChatListingId(null), []);
+  const handleComposerActiveChange = useCallback((active: boolean) => {
+    chatComposerActiveRef.current = active;
+  }, []);
 
   const handleSendMessage = (chatId: string, text: string) => {
     if (!user) return;
@@ -331,6 +343,7 @@ export default function App() {
             onViewListing={handleViewListingFromChat}
             openListingId={openChatListingId}
             onChatOpened={handleChatOpened}
+            onComposerActiveChange={handleComposerActiveChange}
             theme={theme}
           />
         </div>
